@@ -83,9 +83,18 @@ router.get('/my-listings', authenticateToken, requireRole(['OWNER', 'ADMIN']), a
 // GET /api/businesses - Search / List
 router.get('/', async (req, res) => {
   try {
-    const { category, city, query } = req.query;
+    const { category, city, query, status } = req.query;
 
     const whereClause: any = {};
+
+    // Filter by status (default to VERIFIED for public queries)
+    if (status) {
+      if (status !== 'ALL') {
+        whereClause.status = status as string;
+      }
+    } else {
+      whereClause.status = 'VERIFIED';
+    }
 
     if (category) {
       whereClause.category = { slug: category as string };
@@ -323,7 +332,7 @@ router.put('/:id', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (re
         website: website !== undefined ? website : business.website,
         hours: hours !== undefined ? (typeof hours === 'string' ? hours : JSON.stringify(hours)) : business.hours,
         gallery: gallery !== undefined ? gallery : business.gallery,
-        status: status !== undefined ? status : business.status
+        status: (status !== undefined && req.user.role === 'ADMIN') ? status : business.status
       }
     });
 
