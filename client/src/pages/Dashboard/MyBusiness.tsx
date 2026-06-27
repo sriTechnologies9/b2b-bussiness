@@ -69,7 +69,9 @@ export const MyBusiness: React.FC = () => {
       thursday: '09:00 - 18:00',
       friday: '09:00 - 18:00',
       saturday: '09:00 - 18:00',
-      sunday: 'Closed'
+      sunday: 'Closed',
+      customBadge1: '',
+      customBadge2: ''
     },
     gallery: '',
     latitude: '17.3850',
@@ -136,7 +138,7 @@ export const MyBusiness: React.FC = () => {
             email: myBiz.email,
             whatsapp: myBiz.whatsapp || '',
             website: myBiz.website || '',
-            hours: myBiz.hours ? JSON.parse(myBiz.hours) : formData.hours,
+            hours: myBiz.hours ? { ...formData.hours, ...JSON.parse(myBiz.hours) } : formData.hours,
             gallery: deduplicateGallery(myBiz.gallery),
             latitude: myBiz.latitude !== undefined && myBiz.latitude !== null ? myBiz.latitude.toString() : '17.3850',
             longitude: myBiz.longitude !== undefined && myBiz.longitude !== null ? myBiz.longitude.toString() : '78.4867'
@@ -789,17 +791,51 @@ export const MyBusiness: React.FC = () => {
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-2">Weekly Working Hours</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                {Object.keys(formData.hours).map((day) => (
-                  <div key={day} className="space-y-1">
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 capitalize">{day}</label>
-                    <input
-                      type="text"
-                      value={(formData.hours as any)[day]}
-                      onChange={(e) => handleHoursChange(day, e.target.value)}
-                      className="w-full rounded-lg px-2.5 py-1.5 text-xs glass-input"
-                    />
-                  </div>
-                ))}
+                {Object.keys(formData.hours)
+                  .filter((key) => key !== 'customBadge1' && key !== 'customBadge2')
+                  .map((day) => (
+                    <div key={day} className="space-y-1">
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 capitalize">{day}</label>
+                      <input
+                        type="text"
+                        value={(formData.hours as any)[day]}
+                        onChange={(e) => handleHoursChange(day, e.target.value)}
+                        className="w-full rounded-lg px-2.5 py-1.5 text-xs glass-input"
+                      />
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Custom Highlights & Badges */}
+            <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+              <div>
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Custom Highlights & Badges</h3>
+                <p className="text-2xs text-slate-450 font-semibold mt-0.5">Customize the highlight badges shown at the top of your public profile (e.g. "Pure Veg", "Price for two ₹300", "1-Year Warranty"). Leave empty to use category defaults.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Primary Attribute Badge</label>
+                  <input
+                    type="text"
+                    value={(formData.hours as any).customBadge1 || ''}
+                    onChange={(e) => handleHoursChange('customBadge1', e.target.value)}
+                    placeholder="e.g. Pure Veg & Non-Veg, HD Cameras Setup"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Secondary Info Badge</label>
+                  <input
+                    type="text"
+                    value={(formData.hours as any).customBadge2 || ''}
+                    onChange={(e) => handleHoursChange('customBadge2', e.target.value)}
+                    placeholder="e.g. Price for two ₹400, 1-Year Warranty"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
               </div>
             </div>
 

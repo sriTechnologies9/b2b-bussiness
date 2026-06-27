@@ -178,7 +178,7 @@ export const AdminDashboardLayout: React.FC = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/businesses');
+      const res = await fetch('/api/businesses?status=ALL');
       if (res.ok) {
         const data = await res.json();
         setBusinesses(data);

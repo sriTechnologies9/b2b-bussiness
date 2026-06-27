@@ -524,6 +524,181 @@ export const BusinessDetails: React.FC = () => {
     setIsLightboxOpen(true);
   };
 
+  const getCategoryBadges = () => {
+    const isVerified = business.status === 'VERIFIED';
+    
+    // Parse hours to check if custom badges are set
+    const badge1 = hoursMap?.customBadge1 || '';
+    const badge2 = hoursMap?.customBadge2 || '';
+    
+    if (badge1 || badge2) {
+      return (
+        <>
+          {badge1 && (
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-100 uppercase text-[9px] font-bold">
+              {badge1}
+            </span>
+          )}
+          {badge1 && badge2 && <span>•</span>}
+          {badge2 && (
+            <span className="text-slate-700 bg-slate-100 px-2 py-0.5 border border-slate-200 uppercase text-[9px] font-semibold">
+              {badge2}
+            </span>
+          )}
+          {isVerified && (
+            <>
+              {(badge1 || badge2) && <span>•</span>}
+              <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+            </>
+          )}
+        </>
+      );
+    }
+    
+    switch (catSlug) {
+      case 'restaurants':
+        return (
+          <>
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-100 uppercase text-[9px] font-bold">Pure Veg & Non-Veg</span>
+            <span>•</span>
+            <span>Price for two ₹400</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'cctv-shops':
+        return (
+          <>
+            <span className="text-blue-700 bg-blue-50 px-2 py-0.5 border border-blue-100 uppercase text-[9px] font-bold">HD Cameras Setup</span>
+            <span>•</span>
+            <span>1-Year Warranty</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'electricians':
+        return (
+          <>
+            <span className="text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100 uppercase text-[9px] font-bold">On-Demand Booking</span>
+            <span>•</span>
+            <span>24/7 Emergencies</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'plumbers':
+        return (
+          <>
+            <span className="text-cyan-700 bg-cyan-50 px-2 py-0.5 border border-cyan-100 uppercase text-[9px] font-bold">Licensed Contractors</span>
+            <span>•</span>
+            <span>Free Estimates</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'clinics':
+        return (
+          <>
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-100 uppercase text-[9px] font-bold">Certified Doctors</span>
+            <span>•</span>
+            <span>Walk-ins Welcome</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'gyms':
+        return (
+          <>
+            <span className="text-violet-700 bg-violet-50 px-2 py-0.5 border border-violet-100 uppercase text-[9px] font-bold">Modern Equipment</span>
+            <span>•</span>
+            <span>Trainer Guided</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'salons':
+        return (
+          <>
+            <span className="text-pink-700 bg-pink-50 px-2 py-0.5 border border-pink-100 uppercase text-[9px] font-bold">Unisex Services</span>
+            <span>•</span>
+            <span>AC Studio</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'real-estate':
+        return (
+          <>
+            <span className="text-teal-700 bg-teal-50 px-2 py-0.5 border border-teal-100 uppercase text-[9px] font-bold">Verified Properties</span>
+            <span>•</span>
+            <span>Zero Commission Options</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      case 'retail-stores':
+        return (
+          <>
+            <span className="text-blue-700 bg-blue-50 px-2 py-0.5 border border-blue-100 uppercase text-[9px] font-bold">Retail & Wholesale</span>
+            <span>•</span>
+            <span>Store Pick-up</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+      default:
+        return (
+          <>
+            <span className="text-slate-700 bg-slate-50 px-2 py-0.5 border border-slate-200 uppercase text-[9px] font-bold">Verified Seller</span>
+            <span>•</span>
+            <span>Direct Inquiry</span>
+            {isVerified && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+              </>
+            )}
+          </>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6 pb-24 text-slate-800 bg-slate-50/30">
       
@@ -763,7 +938,7 @@ export const BusinessDetails: React.FC = () => {
                 {/* Ratings Row */}
                 <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-slate-500">
                   <div className="bg-[#008f5d] text-white font-black text-[11px] px-2 py-0.5 rounded-none flex items-center space-x-1 shrink-0">
-                    <span>{business.averageRating || '4.2'}</span>
+                    <span>{business.reviewCount > 0 ? business.averageRating : '0'}</span>
                     <Star className="w-3 h-3 text-white fill-white" />
                   </div>
                   <span className="text-slate-400 font-semibold hover:underline cursor-pointer" onClick={() => scrollToSection(reviewsRef, 'reviews')}>
@@ -847,11 +1022,7 @@ export const BusinessDetails: React.FC = () => {
 
                 {/* Extra dynamic flags */}
                 <div className="flex flex-wrap items-center gap-2 text-2xs text-slate-500 font-semibold pt-0.5">
-                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-100 uppercase text-[9px] font-bold">Pure Veg</span>
-                  <span>•</span>
-                  <span>Price for two ₹200</span>
-                  <span>•</span>
-                  <span className="text-indigo-650 bg-indigo-50 px-2 py-0.5 border border-indigo-100 uppercase text-[9px] font-bold">GST Active</span>
+                  {getCategoryBadges()}
                 </div>
               </div>
             </div>
