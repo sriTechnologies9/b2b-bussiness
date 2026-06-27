@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
@@ -37,7 +37,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Health Check
-app.get('/api/clean-db-secret', async (req, res) => {
+app.get('/api/clean-db-secret', async (req: Request, res: Response) => {
   try {
     const proposalDel = await prisma.proposal.deleteMany({});
     const productDel = await prisma.product.deleteMany({});
@@ -81,7 +81,7 @@ app.get('/api/clean-db-secret', async (req, res) => {
   }
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 

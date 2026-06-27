@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, JWT_SECRET } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
@@ -287,7 +287,7 @@ router.post('/:id/rescore', authenticateToken, async (req: AuthenticatedRequest,
 });
 
 // POST /api/leads/track - Public endpoint to track storefront actions (visits, clicks)
-router.post('/track', async (req, res) => {
+router.post('/track', async (req: Request, res: Response) => {
   try {
     const { businessId, action } = req.body; // action: 'visit' | 'whatsapp' | 'phone'
 

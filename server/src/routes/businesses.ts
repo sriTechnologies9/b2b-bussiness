@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
 
@@ -18,7 +18,7 @@ function slugify(text: string) {
 }
 
 // GET /api/businesses/categories - Get all categories
-router.get('/categories', async (req, res) => {
+router.get('/categories', async (req: Request, res: Response) => {
   try {
     const categories = await prisma.category.findMany();
     return res.json(categories);
@@ -81,7 +81,7 @@ router.get('/my-listings', authenticateToken, requireRole(['OWNER', 'ADMIN']), a
 });
 
 // GET /api/businesses - Search / List
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, city, query, status } = req.query;
 
@@ -145,7 +145,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/businesses/slug/:slug - Details by slug
-router.get('/slug/:slug', async (req, res) => {
+router.get('/slug/:slug', async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
     const business = await prisma.business.findUnique({
@@ -362,7 +362,7 @@ router.post('/:id/verify', authenticateToken, requireRole(['OWNER', 'ADMIN']), a
 });
 
 // POST /api/businesses/generate-description - Mock AI description generator
-router.post('/generate-description', authenticateToken, async (req, res) => {
+router.post('/generate-description', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { name, category, location } = req.body;
   if (!name || !category || !location) {
     return res.status(400).json({ error: 'Missing name, category, or location' });
@@ -391,7 +391,7 @@ router.post('/generate-description', authenticateToken, async (req, res) => {
 });
 
 // POST /api/businesses/generate-seo - Mock AI SEO Tags generator
-router.post('/generate-seo', authenticateToken, async (req, res) => {
+router.post('/generate-seo', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { name, category, location } = req.body;
   if (!name || !category || !location) {
     return res.status(400).json({ error: 'Missing name, category, or location' });
@@ -409,7 +409,7 @@ router.post('/generate-seo', authenticateToken, async (req, res) => {
 });
 
 // GET /api/businesses/all/products - Get all products/offers in the marketplace
-router.get('/all/products', async (req, res) => {
+router.get('/all/products', async (req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -433,7 +433,7 @@ router.get('/all/products', async (req, res) => {
 });
 
 // GET /api/businesses/:businessId/products - Get all products for a specific business
-router.get('/:businessId/products', async (req, res) => {
+router.get('/:businessId/products', async (req: Request, res: Response) => {
   try {
     const { businessId } = req.params;
     const products = await prisma.product.findMany({

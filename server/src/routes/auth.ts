@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET, authenticateToken, AuthenticatedRequest } from '../middleware/auth';
@@ -16,7 +16,7 @@ function generateToken(user: { id: string; email: string; role: string; name: st
 }
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
     const { name, email, phone, password, role } = req.body;
 
@@ -83,7 +83,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
