@@ -74,77 +74,77 @@ export const DashboardLayout: React.FC = () => {
       path: '/dealersuser', 
       icon: LayoutDashboard,
       color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-      activeColor: 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-indigo-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Business Profile', 
       path: '/dealersuser/profile', 
       icon: Store,
       color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-      activeColor: 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Manage Products', 
       path: '/dealersuser/products', 
       icon: Tag,
       color: 'text-rose-600 bg-rose-50 border-rose-100',
-      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-650 shadow-rose-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Lead Pipeline', 
       path: '/dealersuser/leads', 
       icon: ClipboardList,
       color: 'text-blue-600 bg-blue-50 border-blue-100',
-      activeColor: 'bg-gradient-to-r from-blue-600 to-cyan-600 shadow-blue-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'RFQ Leads Board', 
       path: '/dealersuser/rfq-market', 
       icon: Layers,
       color: 'text-violet-650 bg-violet-50 border-violet-100',
-      activeColor: 'bg-gradient-to-r from-violet-600 to-purple-650 shadow-violet-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My Sent Inquiries', 
       path: '/dealersuser/my-inquiries', 
       icon: Send,
       color: 'text-cyan-600 bg-cyan-50 border-cyan-100',
-      activeColor: 'bg-gradient-to-r from-cyan-600 to-teal-600 shadow-cyan-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My RFQs / Requirements', 
       path: '/dealersuser/my-rfqs', 
       icon: MessageSquare,
       color: 'text-violet-600 bg-violet-50 border-violet-100',
-      activeColor: 'bg-gradient-to-r from-violet-650 to-indigo-650 shadow-violet-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My Reviews Posted', 
       path: '/dealersuser/my-reviews', 
       icon: Star,
       color: 'text-amber-600 bg-amber-50 border-amber-100',
-      activeColor: 'bg-gradient-to-r from-amber-500 to-yellow-550 shadow-amber-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Customer Reviews', 
       path: '/dealersuser/reviews', 
       icon: Star,
       color: 'text-indigo-650 bg-indigo-50 border-indigo-100',
-      activeColor: 'bg-gradient-to-r from-indigo-650 to-violet-600 shadow-indigo-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'SaaS Subscriptions', 
       path: '/dealersuser/subscriptions', 
       icon: CreditCard,
       color: 'text-amber-600 bg-amber-50 border-amber-100',
-      activeColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-amber-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Account Settings', 
       path: '/dealersuser/settings', 
       icon: User,
       color: 'text-teal-650 bg-teal-50 border-teal-100',
-      activeColor: 'bg-gradient-to-r from-teal-650 to-emerald-650 shadow-teal-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     }
   ];
 

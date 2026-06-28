@@ -41,49 +41,49 @@ export const AdminDashboardLayout: React.FC = () => {
       tab: 'dealerRequests' as const, 
       icon: ClipboardList, 
       color: 'text-amber-600 bg-amber-50 border-amber-100',
-      activeColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-amber-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Manage Users', 
       tab: 'users' as const, 
       icon: Users, 
       color: 'text-blue-600 bg-blue-50 border-blue-100',
-      activeColor: 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Manage RFQs', 
       tab: 'rfqs' as const, 
       icon: FileText, 
       color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-      activeColor: 'bg-gradient-to-r from-indigo-600 to-violet-650 shadow-indigo-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Manage Reviews', 
       tab: 'reviews' as const, 
       icon: MessageSquare, 
       color: 'text-amber-600 bg-amber-50 border-amber-100',
-      activeColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-amber-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Manage Categories', 
       tab: 'categories' as const, 
       icon: Tags, 
       color: 'text-teal-650 bg-teal-50 border-teal-100',
-      activeColor: 'bg-gradient-to-r from-teal-650 to-emerald-600 shadow-teal-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Platform Analytics', 
       tab: 'analytics' as const, 
       icon: BarChart3, 
       color: 'text-purple-650 bg-purple-50 border-purple-100',
-      activeColor: 'bg-gradient-to-r from-purple-600 to-fuchsia-600 shadow-purple-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
       name: 'Admin Profile', 
       tab: 'profile' as const, 
       icon: User, 
       color: 'text-teal-650 bg-teal-50 border-teal-100',
-      activeColor: 'bg-gradient-to-r from-teal-650 to-emerald-600 shadow-teal-500/20'
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     }
   ];
 
