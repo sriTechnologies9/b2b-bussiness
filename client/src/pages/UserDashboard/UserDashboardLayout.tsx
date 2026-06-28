@@ -36,42 +36,42 @@ export const UserDashboardLayout: React.FC = () => {
       path: '/user', 
       icon: LayoutDashboard, 
       color: 'text-brand-600 bg-brand-50 border-brand-100',
-      activeColor: 'bg-gradient-to-r from-brand-600 to-indigo-650 shadow-brand-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My Lead Inquiries', 
       path: '/user/inquiries', 
       icon: ClipboardList, 
       color: 'text-blue-600 bg-blue-50 border-blue-100',
-      activeColor: 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My RFQs / Bids', 
       path: '/user/rfqs', 
       icon: MessageSquare, 
       color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-      activeColor: 'bg-gradient-to-r from-indigo-600 to-violet-650 shadow-indigo-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'My Reviews', 
       path: '/user/reviews', 
       icon: Star, 
       color: 'text-amber-600 bg-amber-50 border-amber-100',
-      activeColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-amber-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Become a Dealer', 
       path: '/user/become-dealer', 
       icon: Store, 
       color: 'text-purple-600 bg-purple-50 border-purple-100',
-      activeColor: 'bg-gradient-to-r from-purple-650 to-indigo-600 shadow-purple-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     },
     { 
       name: 'Profile Details', 
       path: '/user/profile', 
       icon: User, 
       color: 'text-teal-600 bg-teal-50 border-teal-100',
-      activeColor: 'bg-gradient-to-r from-teal-650 to-emerald-600 shadow-teal-500/20'
+      activeColor: 'bg-gradient-to-r from-brand-600 to-brand-500 shadow-brand-500/20'
     }
   ];
 
