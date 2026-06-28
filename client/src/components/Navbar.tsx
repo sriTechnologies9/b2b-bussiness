@@ -125,96 +125,101 @@ export const Navbar: React.FC = () => {
                   </button>
 
                   {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-none bg-white border border-slate-200/80 shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                      <div className="px-3 py-2 text-xs text-slate-500 border-b border-slate-100 mb-1">
-                        Signed in as <span className="font-semibold text-slate-800">{user.email}</span>
-                        <div className="mt-1 flex items-center">
-                          <span className={`inline-flex items-center rounded-none px-1.5 py-0.5 text-2xs font-medium ${user.role === 'OWNER' ? 'bg-indigo-50 text-indigo-650' : 'bg-emerald-50 text-emerald-650'}`}>
+                    <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-slate-200/80 shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                      <div className="px-3.5 py-3 text-xs text-slate-500 bg-slate-50/50 rounded-xl mb-1.5">
+                        <span>Signed in as</span>
+                        <span className="font-extrabold text-slate-800 block truncate mt-0.5 text-xs" title={user.email}>
+                          {user.email}
+                        </span>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${user.role === 'OWNER' ? 'bg-indigo-55 text-indigo-650' : 'bg-emerald-50 text-emerald-650'}`}>
                             {user.role}
                           </span>
                           {user.subscription && (
-                            <span className="ml-1 inline-flex items-center rounded-none px-1.5 py-0.5 text-2xs font-semibold bg-amber-50 text-amber-650">
+                            <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-650">
                               <Sparkles className="w-3 h-3 mr-0.5" /> {user.subscription.plan}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {user.role === 'OWNER' && (
-                        <>
-                          <Link
-                            to="/dealersuser"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-brand-500" />
-                            <span>Business Dashboard</span>
-                          </Link>
-                          <Link
-                            to="/dealersuser/profile"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <User className="w-4 h-4 text-brand-500" />
-                            <span>Seller Profile</span>
-                          </Link>
-                        </>
-                      )}
+                      <div className="space-y-0.5">
+                        {user.role === 'OWNER' && (
+                          <>
+                            <Link
+                              to="/dealersuser"
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <LayoutDashboard className="w-4 h-4 text-brand-500" />
+                              <span>Business Dashboard</span>
+                            </Link>
+                            <Link
+                              to="/dealersuser/profile"
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <User className="w-4 h-4 text-brand-500" />
+                              <span>Seller Profile</span>
+                            </Link>
+                          </>
+                        )}
 
-                      {user.role === 'CUSTOMER' && (
-                        <>
-                          <Link
-                            to="/user"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-brand-500" />
-                            <span>User Panel</span>
-                          </Link>
-                          <Link
-                            to="/user/profile"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <User className="w-4 h-4 text-brand-500" />
-                            <span>Customer Profile</span>
-                          </Link>
-                        </>
-                      )}
+                        {user.role === 'CUSTOMER' && (
+                          <>
+                            <Link
+                              to="/user"
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <LayoutDashboard className="w-4 h-4 text-brand-500" />
+                              <span>User Panel</span>
+                            </Link>
+                            <Link
+                              to="/user/profile"
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <User className="w-4 h-4 text-brand-500" />
+                              <span>Customer Profile</span>
+                            </Link>
+                          </>
+                        )}
 
-                      {user.role === 'ADMIN' && (
-                        <>
-                          <Link
-                            to="/admin"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-rose-500" />
-                            <span>Admin Panel</span>
-                          </Link>
-                          <Link
-                            to="/admin"
-                            state={{ tab: 'profile' }}
-                            onClick={() => setMenuOpen(false)}
-                            className="flex items-center space-x-2 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2 rounded-none text-sm font-medium transition-colors"
-                          >
-                            <User className="w-4 h-4 text-rose-500" />
-                            <span>Admin Profile</span>
-                          </Link>
-                        </>
-                      )}
+                        {user.role === 'ADMIN' && (
+                          <>
+                            <Link
+                              to="/admin"
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <LayoutDashboard className="w-4 h-4 text-rose-500" />
+                              <span>Admin Panel</span>
+                            </Link>
+                            <Link
+                              to="/admin"
+                              state={{ tab: 'profile' }}
+                              onClick={() => setMenuOpen(false)}
+                              className="flex items-center space-x-2.5 text-slate-655 hover:text-slate-900 hover:bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            >
+                              <User className="w-4 h-4 text-rose-500" />
+                              <span>Admin Profile</span>
+                            </Link>
+                          </>
+                        )}
 
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          logout();
-                          navigate('/');
-                        }}
-                        className="w-full flex items-center space-x-2 text-red-650 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-none text-sm font-medium text-left transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Log Out</span>
-                      </button>
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            logout();
+                            navigate('/');
+                          }}
+                          className="w-full flex items-center space-x-2.5 text-red-650 hover:text-red-750 hover:bg-red-50/50 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
