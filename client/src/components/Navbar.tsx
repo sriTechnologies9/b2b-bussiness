@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, LayoutDashboard, X, Loader2, Sparkles, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, X, Loader2, Sparkles, User, Menu } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, token, login, logout, loading } = useAuth();
@@ -20,6 +20,7 @@ export const Navbar: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Auto-open modal if redirected from a protected route
   useEffect(() => {
@@ -94,19 +95,19 @@ export const Navbar: React.FC = () => {
               </Link>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-4">
-              <Link to="/" className="text-slate-650 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            {/* Actions (Desktop only) */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Link to="/" className="text-slate-655 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Home
               </Link>
-              <Link to="/products-feed" className="text-slate-650 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              <Link to="/products-feed" className="text-slate-655 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Products
               </Link>
-              <Link to="/products-feed?filter=offers" className="text-slate-650 hover:text-slate-900 px-3.5 py-1.5 rounded-none text-sm font-extrabold transition-colors flex items-center space-x-1 text-amber-600 bg-amber-500/10 border border-amber-500/20">
+              <Link to="/products-feed?filter=offers" className="text-slate-655 hover:text-slate-900 px-3.5 py-1.5 rounded-none text-sm font-extrabold transition-colors flex items-center space-x-1 text-amber-600 bg-amber-500/10 border border-amber-500/20">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                 <span>Offers</span>
               </Link>
-              <Link to="/search" className="text-slate-650 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              <Link to="/search" className="text-slate-655 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Sellers
               </Link>
 
@@ -236,8 +237,167 @@ export const Navbar: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {/* Mobile Hamburger Button (below md) */}
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="text-slate-600 hover:text-brand-600 p-2 focus:outline-none transition-colors"
+                aria-label="Toggle Menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Mobile Dropdown Panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-150 bg-white shadow-lg animate-in slide-in-from-top duration-200">
+            <div className="px-4 py-4 space-y-2">
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
+              >
+                Home
+              </Link>
+              <Link
+                to="/products-feed"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
+              >
+                Products
+              </Link>
+              <Link
+                to="/products-feed?filter=offers"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-2 text-amber-600 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 rounded-xl text-sm font-extrabold hover:bg-amber-500/20 transition-all text-left"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                <span>Offers</span>
+              </Link>
+              <Link
+                to="/search"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
+              >
+                Sellers
+              </Link>
+
+              <hr className="border-slate-100 my-2" />
+
+              {/* Mobile Auth/Profile Section */}
+              {loading ? (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
+                </div>
+              ) : token && user ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-slate-50 rounded-2xl flex items-center space-x-3 text-left">
+                    <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-600 flex items-center justify-center font-extrabold text-sm border border-brand-100">
+                      {user.name[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-extrabold text-xs text-slate-900 truncate tracking-tight">{user.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate font-semibold mt-0.5">{user.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    {user.role === 'OWNER' && (
+                      <>
+                        <Link
+                          to="/dealersuser"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-brand-500" />
+                          <span>Business Dashboard</span>
+                        </Link>
+                        <Link
+                          to="/dealersuser/profile"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <User className="w-4 h-4 text-brand-500" />
+                          <span>Seller Profile</span>
+                        </Link>
+                      </>
+                    )}
+
+                    {user.role === 'CUSTOMER' && (
+                      <>
+                        <Link
+                          to="/user"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-brand-500" />
+                          <span>User Panel</span>
+                        </Link>
+                        <Link
+                          to="/user/profile"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <User className="w-4 h-4 text-brand-500" />
+                          <span>Customer Profile</span>
+                        </Link>
+                      </>
+                    )}
+
+                    {user.role === 'ADMIN' && (
+                      <>
+                        <Link
+                          to="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-rose-500" />
+                          <span>Admin Panel</span>
+                        </Link>
+                        <Link
+                          to="/admin"
+                          state={{ tab: 'profile' }}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                        >
+                          <User className="w-4 h-4 text-rose-500" />
+                          <span>Admin Profile</span>
+                        </Link>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                        navigate('/');
+                      }}
+                      className="w-full flex items-center space-x-2.5 text-red-650 hover:text-red-750 hover:bg-red-50/50 px-3.5 py-2.5 rounded-xl text-xs font-bold text-left transition-all"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthError('');
+                    setIsRegister(false);
+                    setIsOpen(true);
+                  }}
+                  className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-500 hover:shadow-lg hover:shadow-brand-500/10 transition-all duration-200"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Auth Modal */}
