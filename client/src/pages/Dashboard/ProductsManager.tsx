@@ -18,6 +18,7 @@ export const ProductsManager: React.FC = () => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [subCategory, setSubCategory] = useState('General');
   const [image, setImage] = useState('');
   const [isOffer, setIsOffer] = useState(false);
   const [offerDiscount, setOfferDiscount] = useState('');
@@ -78,6 +79,7 @@ export const ProductsManager: React.FC = () => {
     setName('');
     setPrice('');
     setDescription('');
+    setSubCategory('General');
     setImage('');
     setIsOffer(false);
     setOfferDiscount('');
@@ -89,7 +91,12 @@ export const ProductsManager: React.FC = () => {
     setEditingProduct(prod);
     setName(prod.name);
     setPrice(prod.price.toString());
-    setDescription(prod.description);
+    
+    // Split description to extract subCategory
+    const parts = (prod.description || '').split(' ||| ');
+    setDescription(parts[0] || '');
+    setSubCategory(parts[1] || 'General');
+
     setImage(prod.image || '');
     setIsOffer(prod.isOffer);
     setOfferDiscount(prod.offerDiscount || '');
@@ -102,10 +109,12 @@ export const ProductsManager: React.FC = () => {
     setFormError('');
     setSubmitting(true);
 
+    const finalDescription = description.trim() + ' ||| ' + subCategory.trim();
+
     const payload = {
       businessId: selectedBizId,
       name,
-      description,
+      description: finalDescription,
       price: parseFloat(price),
       image: image || null,
       isOffer,
@@ -413,6 +422,34 @@ export const ProductsManager: React.FC = () => {
                     />
                   </div>
                 )}
+              </div>
+
+              <div className="text-left space-y-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-550 mb-1">Product Subcategory / Variety Tag</label>
+                <div className="flex flex-wrap gap-1">
+                  {['Rice', 'Curry', 'Non-Veg', 'Beverages', 'Sweets', 'Snacks', 'Electronics', 'Plumbing', 'General'].map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setSubCategory(tag)}
+                      className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all ${
+                        subCategory.toLowerCase() === tag.toLowerCase()
+                          ? 'bg-indigo-650 border-indigo-650 text-white shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={subCategory}
+                  onChange={(e) => setSubCategory(e.target.value)}
+                  placeholder="Or type custom subcategory (e.g. Dessert, Starters)..."
+                  className="w-full rounded-lg px-3 py-2 text-sm glass-input font-semibold"
+                />
               </div>
 
               <div className="text-left">

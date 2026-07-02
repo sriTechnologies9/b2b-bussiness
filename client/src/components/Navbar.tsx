@@ -80,7 +80,9 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/80 bg-white/70 backdrop-blur-md">
+      <nav className={`sticky top-0 z-40 w-full glass-panel border-b border-slate-200/80 transition-all duration-300 ${
+        mobileMenuOpen ? 'bg-white shadow-md' : 'bg-white/70 backdrop-blur-md'
+      }`}>
         <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -138,7 +140,7 @@ export const Navbar: React.FC = () => {
                           </span>
                           {user.subscription && (
                             <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-650">
-                              <Sparkles className="w-3 h-3 mr-0.5" /> {user.subscription.plan}
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> {user.subscription.plan}
                             </span>
                           )}
                         </div>
@@ -251,150 +253,174 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Dropdown Panel */}
+        {/* Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-150 bg-white shadow-lg animate-in slide-in-from-top duration-200">
-            <div className="px-4 py-4 space-y-2">
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
-              >
-                Home
-              </Link>
-              <Link
-                to="/products-feed"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
-              >
-                Products
-              </Link>
-              <Link
-                to="/products-feed?filter=offers"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-2 text-amber-600 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 rounded-xl text-sm font-extrabold hover:bg-amber-500/20 transition-all text-left"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                <span>Offers</span>
-              </Link>
-              <Link
-                to="/search"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-slate-655 hover:text-brand-600 px-3.5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all text-left"
-              >
-                Sellers
-              </Link>
+          <div className="fixed inset-x-0 bottom-0 top-16 z-50 md:hidden flex justify-end">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+              onClick={() => setMobileMenuOpen(false)}
+            ></div>
 
-              <hr className="border-slate-100 my-2" />
-
-              {/* Mobile Auth/Profile Section */}
-              {loading ? (
-                <div className="flex justify-center py-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
-                </div>
-              ) : token && user ? (
-                <div className="space-y-3">
-                  <div className="p-3 bg-slate-50 rounded-2xl flex items-center space-x-3 text-left">
-                    <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-600 flex items-center justify-center font-extrabold text-sm border border-brand-100">
-                      {user.name[0].toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-extrabold text-xs text-slate-900 truncate tracking-tight">{user.name}</div>
-                      <div className="text-[10px] text-slate-400 truncate font-semibold mt-0.5">{user.email}</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    {user.role === 'OWNER' && (
-                      <>
-                        <Link
-                          to="/dealersuser"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-brand-500" />
-                          <span>Business Dashboard</span>
-                        </Link>
-                        <Link
-                          to="/dealersuser/profile"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <User className="w-4 h-4 text-brand-500" />
-                          <span>Seller Profile</span>
-                        </Link>
-                      </>
-                    )}
-
-                    {user.role === 'CUSTOMER' && (
-                      <>
-                        <Link
-                          to="/user"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-brand-500" />
-                          <span>User Panel</span>
-                        </Link>
-                        <Link
-                          to="/user/profile"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <User className="w-4 h-4 text-brand-500" />
-                          <span>Customer Profile</span>
-                        </Link>
-                      </>
-                    )}
-
-                    {user.role === 'ADMIN' && (
-                      <>
-                        <Link
-                          to="/admin"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-rose-500" />
-                          <span>Admin Panel</span>
-                        </Link>
-                        <Link
-                          to="/admin"
-                          state={{ tab: 'profile' }}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-                        >
-                          <User className="w-4 h-4 text-rose-500" />
-                          <span>Admin Profile</span>
-                        </Link>
-                      </>
-                    )}
-
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        logout();
-                        navigate('/');
-                      }}
-                      className="w-full flex items-center space-x-2.5 text-red-650 hover:text-red-750 hover:bg-red-50/50 px-3.5 py-2.5 rounded-xl text-xs font-bold text-left transition-all"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
+            {/* Drawer Box */}
+            <div className="relative w-[80%] max-w-sm h-[65vh] bg-white shadow-2xl z-10 flex flex-col justify-between p-6 animate-in slide-in-from-right duration-300 ease-out border-l border-b border-slate-150 text-left rounded-bl-3xl">
+              
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Navigation Menu
+                </span>
                 <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setAuthError('');
-                    setIsRegister(false);
-                    setIsOpen(true);
-                  }}
-                  className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-500 hover:shadow-lg hover:shadow-brand-500/10 transition-all duration-200"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-slate-400 hover:text-slate-655 p-1.5 border border-slate-100 hover:bg-slate-50 transition-colors"
                 >
-                  Sign In
+                  <X className="w-4 h-4" />
                 </button>
-              )}
+              </div>
+
+              {/* Scrollable Links Content */}
+              <div className="flex-1 overflow-y-auto py-5 space-y-3.5 text-left">
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-slate-655 hover:text-brand-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/products-feed"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-slate-655 hover:text-brand-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  Products
+                </Link>
+                <Link
+                  to="/products-feed?filter=offers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 text-amber-600 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg text-sm font-extrabold hover:bg-amber-500/20 transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                  <span>Offers</span>
+                </Link>
+                <Link
+                  to="/search"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-slate-655 hover:text-brand-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  Sellers
+                </Link>
+
+                <hr className="border-slate-100 my-4" />
+
+                {/* Profile Section */}
+                {loading ? (
+                  <div className="flex justify-center py-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
+                  </div>
+                ) : token && user ? (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-slate-50/80 border border-slate-150 rounded-xl flex items-center space-x-3 text-left">
+                      <div className="w-9 h-9 rounded-lg bg-brand-500/25 text-brand-650 flex items-center justify-center font-black text-sm border border-brand-100/50">
+                        {user.name[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-xs text-slate-900 truncate leading-tight">{user.name}</div>
+                        <div className="text-[10px] text-slate-400 truncate font-semibold mt-1" title={user.email}>{user.email}</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      {user.role === 'OWNER' && (
+                        <>
+                          <Link
+                            to="/dealersuser"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5 text-brand-500" />
+                            <span>Business Dashboard</span>
+                          </Link>
+                          <Link
+                            to="/dealersuser/profile"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <User className="w-3.5 h-3.5 text-brand-500" />
+                            <span>Seller Profile</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {user.role === 'CUSTOMER' && (
+                        <>
+                          <Link
+                            to="/user"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5 text-brand-500" />
+                            <span>User Panel</span>
+                          </Link>
+                          <Link
+                            to="/user/profile"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <User className="w-3.5 h-3.5 text-brand-500" />
+                            <span>Customer Profile</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {user.role === 'ADMIN' && (
+                        <>
+                          <Link
+                            to="/admin"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5 text-rose-500" />
+                            <span>Admin Panel</span>
+                          </Link>
+                          <Link
+                            to="/admin"
+                            state={{ tab: 'profile' }}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center space-x-2.5 text-slate-655 hover:text-brand-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left"
+                          >
+                            <User className="w-3.5 h-3.5 text-rose-500" />
+                            <span>Admin Profile</span>
+                          </Link>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          logout();
+                          navigate('/');
+                        }}
+                        className="w-full flex items-center space-x-2.5 text-red-600 hover:text-red-700 hover:bg-red-50/50 px-3 py-2 rounded-lg text-xs font-bold text-left transition-all"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setAuthError('');
+                      setIsRegister(false);
+                      setIsOpen(true);
+                    }}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold rounded-lg text-white bg-brand-600 hover:bg-brand-500 hover:shadow-lg hover:shadow-brand-500/10 transition-all duration-200"
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -4,8 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { UserProfile } from '../UserDashboard/UserProfile';
 import { 
   ShieldCheck, Store, ArrowLeft, CheckCircle, XCircle, Loader2, LogOut, X, Sparkles, Plus, 
-  Menu, Users, FileText, MessageSquare, Tags, BarChart3, Trash2, Edit3, ChevronRight, User, ClipboardList
+  Menu, Users, FileText, MessageSquare, Tags, BarChart3, Trash2, Edit3, ChevronRight, User, ClipboardList,
+  Image
 } from 'lucide-react';
+
 
 export const AdminDashboardLayout: React.FC = () => {
   const { user, token, login, logout, loading: authLoading } = useAuth();
@@ -23,7 +25,7 @@ export const AdminDashboardLayout: React.FC = () => {
   }, [user, authLoading, navigate]);
 
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'rfqs' | 'reviews' | 'analytics' | 'categories' | 'profile' | 'dealerRequests'>(
+  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'rfqs' | 'reviews' | 'analytics' | 'categories' | 'profile' | 'dealerRequests' | 'sliders'>(
     (location.state as any)?.tab || 'listings'
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -68,7 +70,14 @@ export const AdminDashboardLayout: React.FC = () => {
       name: 'Manage Categories', 
       tab: 'categories' as const, 
       icon: Tags, 
-      color: 'text-teal-650 bg-teal-50 border-teal-100',
+      color: 'text-teal-655 bg-teal-50 border-teal-100',
+      activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
+    },
+    { 
+      name: 'Manage Sliders', 
+      tab: 'sliders' as const, 
+      icon: Image, 
+      color: 'text-indigo-650 bg-indigo-50 border-indigo-105',
       activeColor: 'bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-500/20'
     },
     { 
@@ -143,6 +152,120 @@ export const AdminDashboardLayout: React.FC = () => {
   const addLog = (message: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev]);
   };
+
+  // Sliders Tab States
+  const [sliders, setSliders] = useState<any[]>([]);
+  const [slidersLoading, setSlidersLoading] = useState(false);
+  const [isSliderModalOpen, setIsSliderModalOpen] = useState(false);
+  const [selectedSliderIndex, setSelectedSliderIndex] = useState<number | null>(null);
+  
+  // Slider form data state
+  const [sliderForm, setSliderForm] = useState({
+    badge: '',
+    title: '',
+    desc: '',
+    actionText: '',
+    actionLink: '',
+    image: '',
+    icon: 'Sparkles',
+    bgClass: 'from-slate-955 via-slate-900 to-indigo-950/95',
+    accentColor: 'border-brand-500/20 text-brand-450 bg-brand-500/10'
+  });
+
+  // Fetch sliders
+  const fetchSliders = async () => {
+    if (!token) return;
+    setSlidersLoading(true);
+    try {
+      const res = await fetch('/api/businesses/sliders/all');
+      if (res.ok) {
+        const data = await res.json();
+        setSliders(data);
+        addLog(`[Audit] Loaded sliders list. Found ${data.length} banners.`);
+      }
+    } catch (err) {
+      console.error('Failed to fetch sliders', err);
+      addLog(`[Error] Failed to load sliders.`);
+    } finally {
+      setSlidersLoading(false);
+    }
+  };
+
+  // Save sliders back to backend
+  const saveSliders = async (updatedSliders: any[]) => {
+    try {
+      const res = await fetch('/api/businesses/sliders/manage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sliders: updatedSliders })
+      });
+      if (res.ok) {
+        setSliders(updatedSliders);
+        addLog(`[Audit] Dynamic home hero sliders saved successfully.`);
+        return true;
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Failed to save sliders');
+        addLog(`[Error] Failed to save sliders: ${errData.error}`);
+        return false;
+      }
+    } catch (err: any) {
+      console.error('Failed to save sliders', err);
+      addLog(`[Error] Failed to save sliders: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleSliderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let updatedSliders = [...sliders];
+    if (selectedSliderIndex !== null) {
+      updatedSliders[selectedSliderIndex] = sliderForm;
+    } else {
+      updatedSliders.push(sliderForm);
+    }
+    const success = await saveSliders(updatedSliders);
+    if (success) {
+      setIsSliderModalOpen(false);
+      resetSliderForm();
+    }
+  };
+
+  const deleteSlider = async (index: number) => {
+    if (!window.confirm('Are you sure you want to delete this banner?')) return;
+    const updatedSliders = sliders.filter((_, i) => i !== index);
+    await saveSliders(updatedSliders);
+  };
+
+  const openEditSlider = (index: number) => {
+    setSelectedSliderIndex(index);
+    setSliderForm(sliders[index]);
+    setIsSliderModalOpen(true);
+  };
+
+  const openAddSlider = () => {
+    setSelectedSliderIndex(null);
+    resetSliderForm();
+    setIsSliderModalOpen(true);
+  };
+
+  const resetSliderForm = () => {
+    setSliderForm({
+      badge: '',
+      title: '',
+      desc: '',
+      actionText: '',
+      actionLink: '',
+      image: '',
+      icon: 'Sparkles',
+      bgClass: 'from-slate-955 via-slate-900 to-indigo-950/95',
+      accentColor: 'border-brand-500/20 text-brand-450 bg-brand-500/10'
+    });
+  };
+
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,6 +445,8 @@ export const AdminDashboardLayout: React.FC = () => {
         fetchStats();
       } else if (activeTab === 'dealerRequests') {
         fetchDealerRequests();
+      } else if (activeTab === 'sliders') {
+        fetchSliders();
       }
     }
   }, [activeTab, token, user, userPage, userRoleFilter]);
@@ -1716,6 +1841,96 @@ export const AdminDashboardLayout: React.FC = () => {
             </div>
           )}
 
+          {/* TAB 9: HERO SLIDER BANNER MANAGER */}
+          {activeTab === 'sliders' && (
+            <div className="space-y-6 text-left animate-in fade-in-50 duration-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-extrabold text-slate-900 font-sans">Home Hero Sliders Manager</h1>
+                  <p className="text-xs text-slate-500 mt-1">Configure and manage home hero slider banners. Add dynamic marketing images, action links, and badges.</p>
+                </div>
+                <button
+                  onClick={openAddSlider}
+                  className="inline-flex items-center space-x-1 px-4 py-2 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  <span>Add New Slide</span>
+                </button>
+              </div>
+
+              {slidersLoading ? (
+                <div className="flex justify-center items-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+                </div>
+              ) : (
+                <div className="rounded-none glass-panel border border-slate-200 overflow-hidden bg-white shadow-glass-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50/65 border-b border-slate-150 text-slate-655 uppercase tracking-wider font-extrabold">
+                          <th className="p-4">Banner Preview</th>
+                          <th className="p-4">Badge & Title</th>
+                          <th className="p-4">Description</th>
+                          <th className="p-4">Action Button Info</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {sliders.length > 0 ? (
+                          sliders.map((slide, index) => (
+                            <tr key={index} className="hover:bg-slate-50/30 transition-colors">
+                              <td className="p-4 w-28">
+                                <div className="w-24 h-16 bg-slate-100 border border-slate-200 overflow-hidden shadow-sm">
+                                  <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
+                                </div>
+                              </td>
+                              <td className="p-4 max-w-xs">
+                                <span className={`inline-flex px-1.5 py-0.5 rounded-none text-[8px] font-black uppercase tracking-wider border ${slide.accentColor || 'border-brand-500/20 text-brand-450 bg-brand-500/10'} mb-1`}>
+                                  {slide.badge}
+                                </span>
+                                <div className="font-extrabold text-slate-900 leading-snug">{slide.title}</div>
+                                <div className="text-[9px] text-slate-400 font-semibold mt-1">Icon: {slide.icon || 'Sparkles'}</div>
+                              </td>
+                              <td className="p-4 max-w-sm">
+                                <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-3">{slide.desc}</p>
+                              </td>
+                              <td className="p-4">
+                                <div className="font-bold text-slate-800">{slide.actionText}</div>
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{slide.actionLink}</div>
+                              </td>
+                              <td className="p-4 text-right whitespace-nowrap space-x-1">
+                                <button
+                                  onClick={() => openEditSlider(index)}
+                                  className="inline-flex items-center justify-center p-1.5 rounded-none bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-855 shadow-2xs"
+                                  title="Edit Slide"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteSlider(index)}
+                                  className="inline-flex items-center justify-center p-1.5 rounded-none bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 shadow-2xs"
+                                  title="Delete Slide"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center text-slate-400 italic">
+                              No slider banners configured. Click "Add New Slide" to create one.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -1782,6 +1997,132 @@ export const AdminDashboardLayout: React.FC = () => {
                 >
                   {submittingCat ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                   <span>Create Category</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Slider Modal Overlay */}
+      {isSliderModalOpen && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSliderModalOpen(false)}></div>
+
+          <div className="relative w-full max-w-lg bg-white border border-slate-200/80 rounded-none p-6 shadow-2xl z-10 overflow-hidden text-slate-900 text-left animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="absolute top-0 right-0 p-4">
+              <button onClick={() => setIsSliderModalOpen(false)} className="text-slate-400 hover:text-slate-655 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 mb-1 tracking-tight font-sans">
+              {selectedSliderIndex !== null ? 'Edit Hero Slider' : 'Add New Hero Slider'}
+            </h2>
+            <p className="text-xs text-slate-500 mb-6">
+              Configure banner content, images, and quick action parameters.
+            </p>
+
+            <form onSubmit={handleSliderSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Badge Text</label>
+                  <input
+                    type="text"
+                    required
+                    value={sliderForm.badge}
+                    onChange={(e) => setSliderForm({ ...sliderForm, badge: e.target.value })}
+                    placeholder="e.g. India's Premier AI B2B Directory"
+                    className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Lucide Icon name</label>
+                  <input
+                    type="text"
+                    required
+                    value={sliderForm.icon}
+                    onChange={(e) => setSliderForm({ ...sliderForm, icon: e.target.value })}
+                    placeholder="e.g. Sparkles, Store, ClipboardList"
+                    className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Slide Title</label>
+                <input
+                  type="text"
+                  required
+                  value={sliderForm.title}
+                  onChange={(e) => setSliderForm({ ...sliderForm, title: e.target.value })}
+                  placeholder="e.g. Explore Local Products & Verified Sellers"
+                  className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Description Paragraph</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={sliderForm.desc}
+                  onChange={(e) => setSliderForm({ ...sliderForm, desc: e.target.value })}
+                  placeholder="A short descriptive text explaining this slide to your visitors..."
+                  className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Banner Image URL</label>
+                <input
+                  type="url"
+                  required
+                  value={sliderForm.image}
+                  onChange={(e) => setSliderForm({ ...sliderForm, image: e.target.value })}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Action Button Text</label>
+                  <input
+                    type="text"
+                    required
+                    value={sliderForm.actionText}
+                    onChange={(e) => setSliderForm({ ...sliderForm, actionText: e.target.value })}
+                    placeholder="e.g. Browse Categories"
+                    className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Action Button Link / Anchor</label>
+                  <input
+                    type="text"
+                    required
+                    value={sliderForm.actionLink}
+                    onChange={(e) => setSliderForm({ ...sliderForm, actionLink: e.target.value })}
+                    placeholder="e.g. #categories or /user/rfqs"
+                    className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSliderModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-none text-slate-655 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all"
+                >
+                  <span>{selectedSliderIndex !== null ? 'Save Changes' : 'Create Slide'}</span>
                 </button>
               </div>
             </form>

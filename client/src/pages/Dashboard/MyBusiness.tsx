@@ -71,7 +71,14 @@ export const MyBusiness: React.FC = () => {
       saturday: '09:00 - 18:00',
       sunday: 'Closed',
       customBadge1: '',
-      customBadge2: ''
+      customBadge2: '',
+      googleMapsLink: '',
+      googleEmbedUrl: '',
+      logoUrl: '',
+      facebookUrl: '',
+      instagramUrl: '',
+      youtubeUrl: '',
+      twitterUrl: ''
     },
     gallery: '',
     latitude: '17.3850',
@@ -203,6 +210,58 @@ export const MyBusiness: React.FC = () => {
         [day]: value
       }
     });
+  };
+
+  const handleMapsLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const link = e.target.value;
+    
+    // Parse coordinates out of the Google Maps link
+    let parsedLat = '';
+    let parsedLng = '';
+
+    // Match pattern: @lat,lng (e.g. @17.4482,78.3741)
+    const atMatch = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (atMatch) {
+      parsedLat = atMatch[1];
+      parsedLng = atMatch[2];
+    } else {
+      // Match pattern: query=lat,lng (e.g. query=17.4482,78.3741)
+      const queryMatch = link.match(/query=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (queryMatch) {
+        parsedLat = queryMatch[1];
+        parsedLng = queryMatch[2];
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      latitude: parsedLat ? parsedLat : prev.latitude,
+      longitude: parsedLng ? parsedLng : prev.longitude,
+      hours: {
+        ...prev.hours,
+        googleMapsLink: link
+      }
+    }));
+  };
+
+  const handleEmbedCodeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const code = e.target.value;
+    let finalUrl = code.trim();
+    
+    if (finalUrl.includes('<iframe')) {
+      const srcMatch = finalUrl.match(/src=["']([^"']+)["']/);
+      if (srcMatch) {
+        finalUrl = srcMatch[1];
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      hours: {
+        ...prev.hours,
+        googleEmbedUrl: finalUrl
+      }
+    }));
   };
 
   // Submit Profile Form (Save)
@@ -590,6 +649,32 @@ export const MyBusiness: React.FC = () => {
           <h2 className="font-bold text-slate-900 text-lg">Profile Information</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             
+            {/* Business Profile Photo / Logo Upload Panel */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50/50 border border-slate-200 rounded-xl text-left">
+              <div className="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden bg-slate-100 shadow-sm relative group/logo">
+                {formData.hours.logoUrl ? (
+                  <img src={formData.hours.logoUrl} alt="Branding Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center font-black text-xs uppercase">
+                    Logo
+                  </div>
+                )}
+              </div>
+              <div className="flex-grow space-y-1 w-full text-left">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-655">Business Profile Photo / Logo Image URL</label>
+                <input
+                  type="url"
+                  placeholder="Paste profile photo URL (e.g. https://images.unsplash.com/... or company logo link)"
+                  value={formData.hours.logoUrl || ''}
+                  onChange={(e) => handleHoursChange('logoUrl', e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-xs glass-input font-bold"
+                />
+                <span className="block text-[10px] text-slate-400 font-semibold leading-normal">
+                  Provide a clean square image URL to display as your business logo on directories and search results.
+                </span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-550 mb-1">Business Name</label>
@@ -759,32 +844,38 @@ export const MyBusiness: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4 pt-2 border-t border-slate-100">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Latitude (Map Coordinate)</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  name="latitude"
-                  value={formData.latitude}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 17.3850"
-                  className="w-full rounded-lg px-3 py-2 text-sm glass-input"
-                />
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Store Location Coordinates & Maps</h3>
+                <p className="text-2xs text-slate-450 font-semibold mt-0.5">Let customers find your shop route easily. Paste your Google Maps links below, and our system will extract your coordinates automatically!</p>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Longitude (Map Coordinate)</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  name="longitude"
-                  value={formData.longitude}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 78.4867"
-                  className="w-full rounded-lg px-3 py-2 text-sm glass-input"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Google Maps Share / Directions Link</label>
+                  <input
+                    type="url"
+                    name="googleMapsLink"
+                    value={(formData.hours as any).googleMapsLink || ''}
+                    onChange={handleMapsLinkChange}
+                    placeholder="e.g. https://maps.app.goo.gl/... or directions URL"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Google Maps HTML Embed Iframe Code</label>
+                  <input
+                    type="text"
+                    name="googleEmbedUrl"
+                    value={(formData.hours as any).googleEmbedUrl || ''}
+                    onChange={handleEmbedCodeChange}
+                    placeholder='e.g. <iframe src="https://www.google.com/maps/embed?..."></iframe>'
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
               </div>
+
             </div>
 
             {/* Working Hours */}
@@ -792,7 +883,11 @@ export const MyBusiness: React.FC = () => {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-2">Weekly Working Hours</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 {Object.keys(formData.hours)
-                  .filter((key) => key !== 'customBadge1' && key !== 'customBadge2')
+                  .filter((key) => ![
+                    'customBadge1', 'customBadge2', 'googleMapsLink', 
+                    'googleEmbedUrl', 'logoUrl', 'facebookUrl', 
+                    'instagramUrl', 'youtubeUrl', 'twitterUrl'
+                  ].includes(key))
                   .map((day) => (
                     <div key={day} className="space-y-1">
                       <label className="block text-[10px] uppercase font-bold text-slate-500 capitalize">{day}</label>
@@ -833,6 +928,60 @@ export const MyBusiness: React.FC = () => {
                     value={(formData.hours as any).customBadge2 || ''}
                     onChange={(e) => handleHoursChange('customBadge2', e.target.value)}
                     placeholder="e.g. Price for two ₹400, 1-Year Warranty"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Social Media Links */}
+            <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+              <div>
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Social Media & External Links</h3>
+                <p className="text-2xs text-slate-450 font-semibold mt-0.5">Add your business profiles on popular social networks to display clickable brand badges on your storefront!</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={(formData.hours as any).facebookUrl || ''}
+                    onChange={(e) => handleHoursChange('facebookUrl', e.target.value)}
+                    placeholder="e.g. https://facebook.com/mybusiness"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={(formData.hours as any).instagramUrl || ''}
+                    onChange={(e) => handleHoursChange('instagramUrl', e.target.value)}
+                    placeholder="e.g. https://instagram.com/mybusiness"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">YouTube Channel URL</label>
+                  <input
+                    type="url"
+                    value={(formData.hours as any).youtubeUrl || ''}
+                    onChange={(e) => handleHoursChange('youtubeUrl', e.target.value)}
+                    placeholder="e.g. https://youtube.com/@mybusiness"
+                    className="w-full rounded-lg px-3 py-2 text-sm glass-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Twitter / X URL</label>
+                  <input
+                    type="url"
+                    value={(formData.hours as any).twitterUrl || ''}
+                    onChange={(e) => handleHoursChange('twitterUrl', e.target.value)}
+                    placeholder="e.g. https://x.com/mybusiness"
                     className="w-full rounded-lg px-3 py-2 text-sm glass-input"
                   />
                 </div>

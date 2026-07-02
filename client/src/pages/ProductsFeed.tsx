@@ -29,6 +29,16 @@ export const ProductsFeed: React.FC = () => {
     filterParam === 'offers' ? 'offers' : filterParam === 'products' ? 'products' : 'all'
   );
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12); // Defaults to 12 (2 rows of 6 items on desktop)
+
+  // Reset pagination when search parameters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setItemsPerPage(12);
+  }, [searchQuery, cityQuery, filterType]);
+
   useEffect(() => {
     const param = searchParams.get('filter');
     if (param === 'offers') {
@@ -82,6 +92,13 @@ export const ProductsFeed: React.FC = () => {
 
     return true;
   });
+
+  // Slice calculations for paginated items
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 py-8 space-y-8">
@@ -167,90 +184,178 @@ export const ProductsFeed: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
             <span className="text-xs text-slate-500 font-semibold">Filtering product offerings...</span>
           </div>
-        ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 items-stretch">
-            {filtered.map((item) => (
-              <div 
-                key={item.id} 
-                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between text-left relative group h-full hover:-translate-y-0.5 duration-300"
-              >
-                {/* Product Image */}
-                <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden shrink-0 border-b border-slate-100">
-                  {item.image ? (
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">
-                      <ShoppingBag className="w-6 h-6" />
-                    </div>
-                  )}
-
-                  {/* Category Specific Color Badge */}
-                  {item.business?.category?.slug && (
-                    <span className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase border ${
-                      CATEGORY_COLORS[item.business.category.slug] || 'bg-slate-100 text-slate-655 border-slate-200'
-                    }`}>
-                      {item.business.category.name}
-                    </span>
-                  )}
-
-                  {/* Offer Tag */}
-                  {item.isOffer && (
-                    <div className="absolute top-1.5 left-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 border border-amber-400/30 text-white font-extrabold text-[7px] px-1.5 py-0.5 rounded shadow uppercase tracking-wide flex items-center space-x-0.5">
-                      <Sparkles className="w-2 h-2 text-white animate-pulse" />
-                      <span>{item.offerDiscount || 'DEAL'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Details */}
-                <div className="p-2.5 flex-grow flex flex-col justify-between space-y-2">
-                  
-                  {/* Text Info */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-start gap-1">
-                      <h3 className="font-bold text-slate-900 text-xs line-clamp-1 group-hover:text-indigo-650 transition-colors">
-                        {item.name}
-                      </h3>
-                      <span className="font-extrabold text-slate-900 text-xs flex items-center shrink-0">
-                        <span>₹{item.price.toLocaleString()}</span>
-                      </span>
-                    </div>
-                    
-                    <p className="text-[9px] text-slate-500 line-clamp-2 leading-snug">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  {/* Seller Business Info Link */}
-                  <div className="pt-2 border-t border-slate-100 flex flex-col space-y-1.5">
-                    {item.business && (
-                      <div className="flex flex-col space-y-0.5 text-[8px] text-slate-400">
-                        <span className="uppercase font-bold text-slate-400 tracking-wider text-[6px]">Sold By</span>
-                        <span className="font-bold text-slate-700 text-[10px] truncate leading-none">{item.business.name}</span>
-                        <span className="text-[9px] text-slate-455 italic flex items-center mt-0.5">
-                          <MapPin className="w-2.5 h-2.5 mr-0.5 text-slate-400" />
-                          <span>{item.business.city}</span>
-                        </span>
+        ) : currentItems.length > 0 ? (
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 items-stretch">
+              {currentItems.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between text-left relative group h-full hover:-translate-y-0.5 duration-300"
+                >
+                  {/* Product Image */}
+                  <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden shrink-0 border-b border-slate-100">
+                    {item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">
+                        <ShoppingBag className="w-6 h-6" />
                       </div>
                     )}
+
+                    {/* Category Specific Color Badge */}
+                    {item.business?.category?.slug && (
+                      <span className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase border ${
+                        CATEGORY_COLORS[item.business.category.slug] || 'bg-slate-100 text-slate-655 border-slate-200'
+                      }`}>
+                        {item.business.category.name}
+                      </span>
+                    )}
+
+                    {/* Offer Tag */}
+                    {item.isOffer && (
+                      <div className="absolute top-1.5 left-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 border border-amber-400/30 text-white font-extrabold text-[7px] px-1.5 py-0.5 rounded shadow uppercase tracking-wide flex items-center space-x-0.5">
+                        <Sparkles className="w-2 h-2 text-white animate-pulse" />
+                        <span>{item.offerDiscount || 'DEAL'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Details */}
+                  <div className="p-2.5 flex-grow flex flex-col justify-between space-y-2">
                     
-                    <Link
-                      to={item.business ? `/business/${item.business.slug}` : '#'}
-                      className="inline-flex items-center justify-between text-[9px] font-bold text-indigo-600 hover:text-indigo-700 hover:translate-x-0.5 transition-all pt-1"
-                    >
-                      <span>View Storefront</span>
-                      <ArrowRight className="w-3 h-3 text-indigo-500" />
-                    </Link>
+                    {/* Text Info */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-1">
+                        <h3 className="font-bold text-slate-900 text-xs line-clamp-1 group-hover:text-indigo-650 transition-colors">
+                          {item.name}
+                        </h3>
+                        <span className="font-extrabold text-slate-900 text-xs flex items-center shrink-0">
+                          <span>₹{item.price.toLocaleString()}</span>
+                        </span>
+                      </div>
+                      
+                      {(() => {
+                        const parts = (item.description || '').split(' ||| ');
+                        const desc = parts[0] || '';
+                        const tag = parts[1] || '';
+                        return (
+                          <div className="space-y-1 text-left">
+                            <p className="text-[9px] text-slate-500 line-clamp-2 leading-snug">
+                              {desc}
+                            </p>
+                            {tag && tag.toLowerCase() !== 'general' && (
+                              <span className="inline-block px-1 py-0.5 rounded bg-brand-50 border border-brand-100 text-brand-600 font-extrabold text-[6px] uppercase tracking-wider mt-0.5">
+                                {tag}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Seller Business Info Link */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-col space-y-1.5">
+                      {item.business && (() => {
+                        let logoUrl = '';
+                        try {
+                          if (item.business.hours) {
+                            const parsed = typeof item.business.hours === 'string' ? JSON.parse(item.business.hours) : item.business.hours;
+                            logoUrl = parsed.logoUrl || '';
+                          }
+                        } catch (err) {}
+
+                        return (
+                          <div className="flex items-center space-x-2 bg-slate-50/50 p-1.5 border border-slate-100 rounded-lg text-left">
+                            <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
+                              {logoUrl ? (
+                                <img src={logoUrl} alt={item.business.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-black text-[8px] uppercase">
+                                  {item.business.name.slice(0, 2)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <span className="block text-[6px] uppercase font-bold text-slate-400 tracking-wider leading-none">Sold By</span>
+                              <span className="block font-bold text-slate-750 text-[9px] truncate mt-0.5 leading-none">{item.business.name}</span>
+                              <span className="block text-[8px] text-slate-450 italic truncate leading-none mt-0.5">{item.business.city}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      <Link
+                        to={item.business ? `/business/${item.business.slug}` : '#'}
+                        className="inline-flex items-center justify-between text-[9px] font-bold text-indigo-600 hover:text-indigo-700 hover:translate-x-0.5 transition-all pt-1"
+                      >
+                        <span>View Storefront</span>
+                        <ArrowRight className="w-3 h-3 text-indigo-500" />
+                      </Link>
+                    </div>
+
                   </div>
 
                 </div>
+              ))}
+            </div>
 
+            {/* Pagination & Load More Actions */}
+            {totalPages > 1 && (
+              <div className="flex flex-col items-center justify-center pt-8 space-y-5">
+                {/* View More Button (Loads 2 more rows of 12 items) */}
+                {indexOfLastItem < totalItems && (
+                  <button
+                    onClick={() => setItemsPerPage(prev => prev + 12)}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow hover:shadow-md hover:-translate-y-0.5"
+                  >
+                    View More Products
+                  </button>
+                )}
+
+                {/* Page Navigator */}
+                <div className="flex flex-col sm:flex-row items-center justify-between w-full pt-4 border-t border-slate-100 gap-4">
+                  <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+                  </span>
+                  
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 border border-slate-200 text-slate-655 rounded-lg text-xs font-bold hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
+                          currentPage === page
+                            ? 'bg-indigo-650 text-white shadow'
+                            : 'border border-slate-200 text-slate-655 hover:bg-slate-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 border border-slate-200 text-slate-655 rounded-lg text-xs font-bold hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className="text-center py-28 rounded-2xl border border-dashed border-slate-300 bg-white shadow-sm">
