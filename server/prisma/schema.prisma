@@ -21,7 +21,6 @@ model User {
   subscription Subscription?
   rfqs         Rfq[]
   dealerRequests DealerRequest[]
-  follows      Follow[]
 }
 
 model Business {
@@ -51,7 +50,6 @@ model Business {
   reviews     Review[]
   proposals   Proposal[]
   products    Product[]
-  follows     Follow[]
 }
 
 model Category {
@@ -154,16 +152,5 @@ model DealerRequest {
   generatedPass  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-}
-
-model Follow {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-
-  @@unique([userId, businessId])
 }
 
