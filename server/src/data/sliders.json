@@ -1,0 +1,35 @@
+[
+  {
+    "badge": "India's Premier AI B2B Directory",
+    "title": "Explore Local Products & Verified Sellers",
+    "desc": "Connect directly with verified local businesses, explore storefront catalogs, request custom quotes, and chat instantly via WhatsApp.",
+    "actionText": "Browse Categories",
+    "actionLink": "#categories",
+    "bgClass": "from-slate-955 via-slate-900 to-indigo-950/95",
+    "accentColor": "border-brand-500/20 text-brand-450 bg-brand-500/10",
+    "image": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80",
+    "icon": "Sparkles"
+  },
+  {
+    "badge": "Live RFQ Bidding Marketplace",
+    "title": "Post Requirements. Get Competitive Bids.",
+    "desc": "Skip scrolling through listings. Post your project specs or procurement needs as an RFQ, and let nearby verified businesses bid directly.",
+    "actionText": "Post an RFQ",
+    "actionLink": "/user/rfqs",
+    "bgClass": "from-slate-955 via-slate-900 to-rose-950/90",
+    "accentColor": "border-rose-500/20 text-rose-455 bg-rose-500/10",
+    "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80",
+    "icon": "ClipboardList"
+  },
+  {
+    "badge": "Merchant SaaS Dashboard Suite",
+    "title": "Empower Your Business Storefront",
+    "desc": "Register as an Owner to unlock AI Copywriter biography tools, automatic lead CRM scores (Hot/Cold), and verified GSTIN trust badges.",
+    "actionText": "Register Store",
+    "actionLink": "#register-cta",
+    "bgClass": "from-slate-955 via-slate-900 to-emerald-950/90",
+    "accentColor": "border-emerald-500/20 text-emerald-455 bg-emerald-500/10",
+    "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80",
+    "icon": "Store"
+  }
+]

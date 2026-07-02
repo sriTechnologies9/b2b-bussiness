@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -20,7 +22,30 @@ function slugify(text: string) {
 // GET /api/businesses/categories - Get all categories
 router.get('/categories', async (req: Request, res: Response) => {
   try {
-    const categories = await prisma.category.findMany();
+    let categories = await prisma.category.findMany();
+    
+    // Auto-seed default categories if database is empty
+    if (categories.length === 0) {
+      const defaultCats = [
+        { name: 'Restaurants', slug: 'restaurants', icon: 'Utensils' },
+        { name: 'Electricians', slug: 'electricians', icon: 'Zap' },
+        { name: 'Plumbers', slug: 'plumbers', icon: 'Droplet' },
+        { name: 'Clinics', slug: 'clinics', icon: 'Activity' },
+        { name: 'Gyms', slug: 'gyms', icon: 'Dumbbell' },
+        { name: 'Salons', slug: 'salons', icon: 'Scissors' },
+        { name: 'CCTV Shops', slug: 'cctv-shops', icon: 'Camera' },
+        { name: 'Real Estate', slug: 'real-estate', icon: 'Home' },
+        { name: 'Retail Stores', slug: 'retail-stores', icon: 'ShoppingBag' }
+      ];
+      
+      await prisma.category.createMany({
+        data: defaultCats,
+        skipDuplicates: true
+      });
+      
+      categories = await prisma.category.findMany();
+    }
+    
     return res.json(categories);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -176,10 +201,22 @@ router.get('/slug/:slug', async (req: Request, res: Response) => {
       ? parseFloat((business.reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1))
       : 0;
 
+    // Parse follower stats from hours JSON metadata
+    let hoursMap: any = {};
+    try {
+      hoursMap = typeof business.hours === 'string' ? JSON.parse(business.hours) : (business.hours || {});
+    } catch (e) {
+      hoursMap = {};
+    }
+    const followerCount = (hoursMap.followersList && Array.isArray(hoursMap.followersList)) 
+      ? hoursMap.followersList.length 
+      : 0;
+
     return res.json({
       ...business,
       averageRating,
-      reviewCount
+      reviewCount,
+      followerCount
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -419,6 +456,7 @@ router.get('/all/products', async (req: Request, res: Response) => {
             name: true,
             slug: true,
             city: true,
+            hours: true,
             categoryId: true,
             category: true
           }
@@ -626,4 +664,97 @@ router.delete('/categories/:id', authenticateToken, requireRole(['ADMIN']), asyn
   }
 });
 
+// GET /api/businesses/sliders/all - Get all home hero sliders
+router.get('/sliders/all', async (req: Request, res: Response) => {
+  try {
+    const filePath = path.join(__dirname, '..', 'data', 'sliders.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json([]);
+    }
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return res.json(JSON.parse(data));
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Failed to read sliders: ' + error.message });
+  }
+});
+
+// POST /api/businesses/sliders/manage - Save updated list of sliders (ADMIN only)
+router.post('/sliders/manage', authenticateToken, requireRole(['ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sliders } = req.body;
+    if (!sliders || !Array.isArray(sliders)) {
+      return res.status(400).json({ error: 'Sliders array is required' });
+    }
+
+    // Basic validation of fields
+    for (const slide of sliders) {
+      if (!slide.badge || !slide.title || !slide.desc || !slide.image) {
+        return res.status(400).json({ error: 'Each slide must have a badge, title, desc, and image.' });
+      }
+    }
+
+    const filePath = path.join(__dirname, '..', 'data', 'sliders.json');
+    
+    // Ensure the data directory exists
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(sliders, null, 2), 'utf-8');
+    return res.json({ success: true, message: 'Sliders updated successfully', sliders });
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Failed to save sliders: ' + error.message });
+  }
+});
+
+// POST /api/businesses/:id/follow - Persistent unique follower toggling (with duplicate checks)
+router.post('/:id/follow', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const business = await prisma.business.findUnique({ where: { id } });
+    if (!business) return res.status(404).json({ error: 'Business not found' });
+
+    let hoursMap: any = {};
+    try {
+      hoursMap = typeof business.hours === 'string' ? JSON.parse(business.hours) : (business.hours || {});
+    } catch (e) {
+      hoursMap = {};
+    }
+
+    if (!hoursMap.followersList || !Array.isArray(hoursMap.followersList)) {
+      hoursMap.followersList = [];
+    }
+
+    const userId = req.user.id;
+    const isFollowing = hoursMap.followersList.includes(userId);
+
+    if (isFollowing) {
+      // Unfollow: remove user from unique list
+      hoursMap.followersList = hoursMap.followersList.filter((uid: string) => uid !== userId);
+    } else {
+      // Follow: add user to unique list (no duplicates)
+      hoursMap.followersList.push(userId);
+    }
+
+    const updated = await prisma.business.update({
+      where: { id },
+      data: {
+        hours: JSON.stringify(hoursMap)
+      }
+    });
+
+    return res.json({
+      success: true,
+      isFollowing: !isFollowing,
+      followerCount: hoursMap.followersList.length
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
+
