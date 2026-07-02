@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -125,38 +126,41 @@ async function seedDefaultDataIfEmpty() {
       });
 
       // 2. Create Users safely
+      const defaultPassword = await bcrypt.hash('password123', 10);
+      const adminPassword = await bcrypt.hash('adminpassword', 10);
+
       let owner1 = await prisma.user.findUnique({ where: { email: 'rajesh@compaanynamedelaerss.com' } });
       if (!owner1) {
         owner1 = await prisma.user.create({
-          data: { name: 'Rajesh Kumar', email: 'rajesh@compaanynamedelaerss.com', phone: '9876543210', password: 'password123', role: 'OWNER' }
+          data: { name: 'Rajesh Kumar', email: 'rajesh@compaanynamedelaerss.com', phone: '9876543210', password: defaultPassword, role: 'OWNER' }
         });
       }
 
       let owner2 = await prisma.user.findUnique({ where: { email: 'anjali@compaanynamedelaerss.com' } });
       if (!owner2) {
         owner2 = await prisma.user.create({
-          data: { name: 'Anjali Sharma', email: 'anjali@compaanynamedelaerss.com', phone: '9876543211', password: 'password123', role: 'OWNER' }
+          data: { name: 'Anjali Sharma', email: 'anjali@compaanynamedelaerss.com', phone: '9876543211', password: defaultPassword, role: 'OWNER' }
         });
       }
 
       let customer1 = await prisma.user.findUnique({ where: { email: 'vikram@example.com' } });
       if (!customer1) {
         customer1 = await prisma.user.create({
-          data: { name: 'Vikram Singh', email: 'vikram@example.com', phone: '9876543212', password: 'password123', role: 'CUSTOMER' }
+          data: { name: 'Vikram Singh', email: 'vikram@example.com', phone: '9876543212', password: defaultPassword, role: 'CUSTOMER' }
         });
       }
 
       let customer2 = await prisma.user.findUnique({ where: { email: 'priya@example.com' } });
       if (!customer2) {
         customer2 = await prisma.user.create({
-          data: { name: 'Priya Patel', email: 'priya@example.com', phone: '9876543213', password: 'password123', role: 'CUSTOMER' }
+          data: { name: 'Priya Patel', email: 'priya@example.com', phone: '9876543213', password: defaultPassword, role: 'CUSTOMER' }
         });
       }
 
       let adminUser = await prisma.user.findUnique({ where: { email: 'admin@compaanynamedelaerss.com' } });
       if (!adminUser) {
         adminUser = await prisma.user.create({
-          data: { name: 'System Admin', email: 'admin@compaanynamedelaerss.com', phone: '9999999999', password: 'adminpassword', role: 'ADMIN' }
+          data: { name: 'System Admin', email: 'admin@compaanynamedelaerss.com', phone: '9999999999', password: adminPassword, role: 'ADMIN' }
         });
       }
 

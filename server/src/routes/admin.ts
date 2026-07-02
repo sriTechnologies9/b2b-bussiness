@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -343,7 +344,7 @@ router.post('/dealer-requests/:id/approve', ...adminAuth, async (req: Authentica
         name: request.businessName + " Owner",
         email: generatedEmail,
         phone: request.contactPhone,
-        password: generatedPass,
+        password: await bcrypt.hash(generatedPass, 10),
         role: 'OWNER'
       }
     });

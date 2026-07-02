@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { JWT_SECRET, authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
@@ -50,7 +51,7 @@ router.post('/register', async (req: Request, res: Response) => {
         name,
         email,
         phone: phone || '',
-        password, // stored plain-text for simple local dev/testing
+        password: await bcrypt.hash(password, 10),
         role: targetRole
       }
     });
@@ -96,7 +97,7 @@ router.post('/login', async (req: Request, res: Response) => {
       include: { subscription: true }
     });
 
-    if (!user || user.password !== password) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -233,13 +234,13 @@ router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res
 
     // Verify current password
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!user || user.password !== currentPassword) {
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { password: newPassword }
+      data: { password: await bcrypt.hash(newPassword, 10) }
     });
 
     return res.json({ success: true, message: 'Password changed successfully' });
