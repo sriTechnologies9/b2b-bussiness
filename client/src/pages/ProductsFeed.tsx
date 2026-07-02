@@ -248,9 +248,13 @@ export const ProductsFeed: React.FC = () => {
                               {desc}
                             </p>
                             {tag && tag.toLowerCase() !== 'general' && (
-                              <span className="inline-block px-1 py-0.5 rounded bg-brand-50 border border-brand-100 text-brand-600 font-extrabold text-[6px] uppercase tracking-wider mt-0.5">
-                                {tag}
-                              </span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {tag.split(',').map((s: string) => s.trim()).filter(Boolean).map((singleTag: string, tIdx: number) => (
+                                  <span key={tIdx} className="inline-block px-1 py-0.5 rounded bg-brand-50 border border-brand-100 text-brand-600 font-extrabold text-[6px] uppercase tracking-wider">
+                                    {singleTag}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
                         );

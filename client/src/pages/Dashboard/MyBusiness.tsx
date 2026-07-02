@@ -78,7 +78,9 @@ export const MyBusiness: React.FC = () => {
       facebookUrl: '',
       instagramUrl: '',
       youtubeUrl: '',
-      twitterUrl: ''
+      twitterUrl: '',
+      storeStatus: true,
+      whyStoreOff: ''
     },
     gallery: '',
     latitude: '17.3850',
@@ -202,7 +204,7 @@ export const MyBusiness: React.FC = () => {
     setAddressSuggestions([]);
   };
 
-  const handleHoursChange = (day: string, value: string) => {
+  const handleHoursChange = (day: string, value: any) => {
     setFormData({
       ...formData,
       hours: {
@@ -886,7 +888,8 @@ export const MyBusiness: React.FC = () => {
                   .filter((key) => ![
                     'customBadge1', 'customBadge2', 'googleMapsLink', 
                     'googleEmbedUrl', 'logoUrl', 'facebookUrl', 
-                    'instagramUrl', 'youtubeUrl', 'twitterUrl'
+                    'instagramUrl', 'youtubeUrl', 'twitterUrl',
+                    'storeStatus', 'whyStoreOff'
                   ].includes(key))
                   .map((day) => (
                     <div key={day} className="space-y-1">
@@ -985,6 +988,53 @@ export const MyBusiness: React.FC = () => {
                     className="w-full rounded-lg px-3 py-2 text-sm glass-input"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Store Availability Status */}
+            <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>Store Availability Status</span>
+                    <span className="text-[9px] font-black bg-emerald-50 text-emerald-650 px-2 py-0.5 rounded border border-emerald-250/50 uppercase tracking-wider">
+                      All Plans Active
+                    </span>
+                  </h3>
+                  <p className="text-2xs text-slate-450 font-semibold mt-0.5">Temporarily toggle your storefront availability on/off for directory search results.</p>
+                </div>
+                
+                {/* Styled Active Switch Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentVal = (formData.hours as any).storeStatus !== false;
+                    handleHoursChange('storeStatus', !currentVal);
+                  }}
+                  className="flex items-center space-x-2.5 focus:outline-none group/toggle"
+                >
+                  <span className={`text-[10px] font-bold transition-colors ${!(formData.hours as any).storeStatus ? 'text-slate-900 font-extrabold' : 'text-slate-400'}`}>OFF</span>
+                  <div className={`w-11 h-6 rounded-full p-1 transition-all duration-300 flex items-center ${
+                    ((formData.hours as any).storeStatus !== false) ? 'bg-emerald-500 justify-end' : 'bg-slate-300 justify-start'
+                  }`}>
+                    <div className="w-4 h-4 bg-white rounded-full shadow-md transform group-hover/toggle:scale-105 transition-transform"></div>
+                  </div>
+                  <span className={`text-[10px] font-bold transition-colors ${((formData.hours as any).storeStatus !== false) ? 'text-emerald-600 font-extrabold' : 'text-slate-400'}`}>ON</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-555 mb-1">Reason for closing / Store OFF description</label>
+                <input
+                  type="text"
+                  value={(formData.hours as any).whyStoreOff || ''}
+                  onChange={(e) => handleHoursChange('whyStoreOff', e.target.value)}
+                  placeholder="e.g. Closed for weekly maintenance, back on Monday!"
+                  className="w-full rounded-lg px-3 py-2 text-sm glass-input font-medium"
+                />
+                <span className="block text-[10px] text-slate-400 font-semibold leading-normal mt-1 text-left">
+                  This custom message will be displayed on your storefront page header to inform visitors when your store is set to offline.
+                </span>
               </div>
             </div>
 

@@ -816,9 +816,27 @@ export const Home: React.FC = () => {
                               ₹{item.price.toLocaleString()}
                             </span>
                           </div>
-                          <p className="text-[9px] text-slate-500 line-clamp-2 leading-snug">
-                            {item.description}
-                          </p>
+                          {(() => {
+                            const parts = (item.description || '').split(' ||| ');
+                            const desc = parts[0] || '';
+                            const tag = parts[1] || '';
+                            return (
+                              <div className="space-y-1 text-left">
+                                <p className="text-[9px] text-slate-555 line-clamp-2 leading-snug">
+                                  {desc}
+                                </p>
+                                {tag && tag.toLowerCase() !== 'general' && (
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {tag.split(',').map((s: string) => s.trim()).filter(Boolean).map((singleTag: string, tIdx: number) => (
+                                      <span key={tIdx} className="inline-block px-1 py-0.5 rounded bg-brand-50 border border-brand-100/50 text-brand-600 font-extrabold text-[6px] uppercase tracking-wider">
+                                        {singleTag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Seller profile reference badge */}
@@ -850,8 +868,11 @@ export const Home: React.FC = () => {
             })()}
           </div>
         </section>
+      </div>
 
-        {/* 1. HERO BANNER SLIDER CAROUSEL */}
+      {selectedCategory === null && (
+        <>
+          {/* 1. HERO BANNER SLIDER CAROUSEL */}
         <div 
           className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 pt-6 pb-0"
           onMouseEnter={() => setIsSliderHovered(true)}
@@ -956,7 +977,6 @@ export const Home: React.FC = () => {
 
           </div>
         </div>
-      </div>
 
       {/* 1.5. EXPLORE TOP CITIES */}
       <section className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 space-y-6">
@@ -1716,6 +1736,8 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </section>
+          </>
+        )}
 
       {/* SPA Category Products Overlay - Full Viewport */}
       {showFullOverlay && selectedCategory !== null && ReactDOM.createPortal(

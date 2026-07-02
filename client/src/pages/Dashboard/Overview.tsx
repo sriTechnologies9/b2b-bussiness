@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ClipboardList, TrendingUp, Sparkles, AlertCircle, Plus, ChevronRight, MessageSquare, Phone } from 'lucide-react';
+import { ClipboardList, TrendingUp, Sparkles, AlertCircle, Plus, ChevronRight, MessageSquare, Phone, Users } from 'lucide-react';
 
 export const Overview: React.FC = () => {
   const { token, user } = useAuth();
@@ -78,11 +78,22 @@ export const Overview: React.FC = () => {
   }
 
   // Metrics details
-  const customInquiriesCount = leads.filter(l => !l.message.startsWith('[Auto-Lead]')).length;
-  const hotLeads = leads.filter(l => l.score === 'HOT' && !l.message.startsWith('[Auto-Lead]')).length;
-  const whatsappClicksCount = leads.filter(l => l.message.includes('Clicked Chat on WhatsApp')).length;
-  const phoneClicksCount = leads.filter(l => l.message.includes('Clicked Call/Phone')).length;
-  const profileViewsCount = leads.filter(l => l.message.includes('Visited business storefront')).length;
+  const isViewLead = (msg: string) => msg.includes('opened your shop page') || msg.includes('Visited business storefront');
+  const isWhatsappLead = (msg: string) => msg.includes('chat with you on WhatsApp') || msg.includes('Clicked Chat on WhatsApp');
+  const isPhoneLead = (msg: string) => msg.includes('see your phone number') || msg.includes('Clicked Call/Phone');
+
+  const customInquiriesCount = leads.filter(l => !isViewLead(l.message) && !isWhatsappLead(l.message) && !isPhoneLead(l.message)).length;
+  const hotLeads = leads.filter(l => l.score === 'HOT' && !isViewLead(l.message) && !isWhatsappLead(l.message) && !isPhoneLead(l.message)).length;
+  const whatsappClicksCount = leads.filter(l => isWhatsappLead(l.message)).length;
+  const phoneClicksCount = leads.filter(l => isPhoneLead(l.message)).length;
+  const profileViewsCount = leads.filter(l => isViewLead(l.message)).length;
+  let parsedHours: any = {};
+  try {
+    parsedHours = typeof business?.hours === 'string' ? JSON.parse(business.hours) : (business?.hours || {});
+  } catch (e) {}
+  const followersCount = (parsedHours.followersList && Array.isArray(parsedHours.followersList)) 
+    ? parsedHours.followersList.length 
+    : 0;
   const plan = user?.subscription?.plan || 'FREE';
 
   return (
@@ -106,12 +117,12 @@ export const Overview: React.FC = () => {
       </div>
 
       {/* Analytics Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Direct Inquiries */}
-        <div className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3">
+        <Link to="/dealersuser/leads?filter=message" className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3 hover:border-indigo-400 hover:shadow-md transition-all duration-300 block text-left group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-550">Customer Messages ✉️</span>
-            <ClipboardList className="w-5 h-5 text-indigo-550" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-550 group-hover:text-indigo-600 transition-colors">Customer Messages ✉️</span>
+            <ClipboardList className="w-5 h-5 text-indigo-550 transition-transform group-hover:scale-105" />
           </div>
           <div className="flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-slate-900">{customInquiriesCount}</span>
@@ -121,43 +132,69 @@ export const Overview: React.FC = () => {
               </span>
             )}
           </div>
-          <p className="text-[10px] text-slate-500">Form requirement submissions</p>
-        </div>
+          <div className="flex justify-between items-center text-[10px] text-slate-500">
+            <span>Form requirement submissions</span>
+            <span className="text-[9px] font-bold text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+          </div>
+        </Link>
 
         {/* Profile Views */}
-        <div className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3">
+        <Link to="/dealersuser/leads?filter=view" className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3 hover:border-indigo-400 hover:shadow-md transition-all duration-300 block text-left group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-550">Shop Views 👁️</span>
-            <TrendingUp className="w-5 h-5 text-cyan-600" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555 group-hover:text-indigo-600 transition-colors">Shop Views 👁️</span>
+            <TrendingUp className="w-5 h-5 text-cyan-600 transition-transform group-hover:scale-105" />
           </div>
           <div className="flex items-baseline space-x-1">
             <span className="text-3xl font-extrabold text-slate-900">{profileViewsCount}</span>
           </div>
-          <p className="text-[10px] text-slate-500">Automated page visit logs</p>
-        </div>
+          <div className="flex justify-between items-center text-[10px] text-slate-500">
+            <span>Automated page visit logs</span>
+            <span className="text-[9px] font-bold text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+          </div>
+        </Link>
 
         {/* WhatsApp Clicks */}
-        <div className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3">
+        <Link to="/dealersuser/leads?filter=whatsapp" className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3 hover:border-indigo-400 hover:shadow-md transition-all duration-300 block text-left group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555">WhatsApp Chats 💬</span>
-            <MessageSquare className="w-5 h-5 text-emerald-605" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555 group-hover:text-indigo-600 transition-colors">WhatsApp Chats 💬</span>
+            <MessageSquare className="w-5 h-5 text-emerald-605 transition-transform group-hover:scale-105" />
           </div>
           <div className="flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-slate-900">{whatsappClicksCount}</span>
           </div>
-          <p className="text-[10px] text-slate-500">Direct WhatsApp chats initiated</p>
-        </div>
+          <div className="flex justify-between items-center text-[10px] text-slate-500">
+            <span>Direct WhatsApp chats initiated</span>
+            <span className="text-[9px] font-bold text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+          </div>
+        </Link>
 
         {/* Phone Clicks */}
-        <div className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3">
+        <Link to="/dealersuser/leads?filter=phone" className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3 hover:border-indigo-400 hover:shadow-md transition-all duration-300 block text-left group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555">Phone Clicks 📞</span>
-            <Phone className="w-5 h-5 text-brand-600" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555 group-hover:text-indigo-600 transition-colors">Phone Clicks 📞</span>
+            <Phone className="w-5 h-5 text-brand-600 transition-transform group-hover:scale-105" />
           </div>
           <div className="flex items-baseline space-x-1">
             <span className="text-3xl font-extrabold text-slate-900">{phoneClicksCount}</span>
           </div>
-          <p className="text-[10px] text-slate-500">Contact number reveal clicks</p>
+          <div className="flex justify-between items-center text-[10px] text-slate-500">
+            <span>Contact number reveal clicks</span>
+            <span className="text-[9px] font-bold text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+          </div>
+        </Link>
+
+        {/* Store Followers */}
+        <div className="rounded-2xl glass-panel border border-slate-200 p-5 space-y-3 bg-white/80 select-none text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-555">Store Followers 👥</span>
+            <Users className="w-5 h-5 text-[#4f46e5]" />
+          </div>
+          <div className="flex items-baseline space-x-1">
+            <span className="text-3xl font-extrabold text-slate-900">{followersCount}</span>
+          </div>
+          <div className="text-[10px] text-slate-500">
+            Active member bookmarks
+          </div>
         </div>
       </div>
 
@@ -175,9 +212,9 @@ export const Overview: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {leads.filter(l => !l.message.startsWith('[Auto-Lead]')).length > 0 ? (
+            {leads.filter(l => !isViewLead(l.message) && !isWhatsappLead(l.message) && !isPhoneLead(l.message)).length > 0 ? (
               leads
-                .filter(l => !l.message.startsWith('[Auto-Lead]'))
+                .filter(l => !isViewLead(l.message) && !isWhatsappLead(l.message) && !isPhoneLead(l.message))
                 .slice(0, 3)
                 .map((lead) => (
                   <div key={lead.id} className="p-4 rounded-xl border border-slate-200 bg-white/40 hover:bg-white/95 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3">

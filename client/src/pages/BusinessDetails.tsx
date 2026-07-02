@@ -322,11 +322,23 @@ export const ReviewsSection: React.FC<{ business: any, reviewsRef?: React.RefObj
 };
 
 const B2BQuoteRequestForm: React.FC<{ business: any }> = ({ business }) => {
+  const { token } = useAuth();
+  const navigate = useNavigate();
   const [nameVal, setNameVal] = useState('');
   const [phoneVal, setPhoneVal] = useState('');
   const [msgVal, setMsgVal] = useState(`Hi ${business.name || 'Merchant'}, I am interested in inquiring about your B2B wholesale prices and catalog availability. Please share a quotation.`);
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [inquirySuccess, setInquirySuccess] = useState(false);
+
+  const hoursMap = typeof business.hours === 'string' ? JSON.parse(business.hours) : business.hours;
+
+  if (hoursMap?.storeStatus === false) {
+    return (
+      <div className="p-6 bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500 font-semibold text-xs leading-normal">
+        This merchant is temporarily offline. Online quote inquiries are paused.
+      </div>
+    );
+  }
 
   const handleInlineSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,9 +348,14 @@ const B2BQuoteRequestForm: React.FC<{ business: any }> = ({ business }) => {
     }
     setInquirySubmitting(true);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           businessId: business.id,
           customerName: nameVal,
@@ -359,6 +376,24 @@ const B2BQuoteRequestForm: React.FC<{ business: any }> = ({ business }) => {
       setInquirySubmitting(false);
     }
   };
+
+  if (!token) {
+    return (
+      <div className="text-center p-6 border border-dashed border-slate-200 rounded-none bg-slate-50/30 space-y-3">
+        <p className="text-slate-500 text-xs font-semibold leading-normal">
+          You must be signed in to submit B2B quote inquiries to this seller.
+        </p>
+        <button
+          onClick={() => {
+            navigate(window.location.pathname, { replace: true, state: { openLogin: true } });
+          }}
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-2xs font-extrabold rounded-none transition-colors uppercase tracking-wider"
+        >
+          Sign In / Register
+        </button>
+      </div>
+    );
+  }
 
   if (inquirySuccess) {
     return (
@@ -425,6 +460,152 @@ const B2BQuoteRequestForm: React.FC<{ business: any }> = ({ business }) => {
       >
         {inquirySubmitting ? <Loader2 className="w-4.5 h-4.5 animate-spin mr-1.5 text-white" /> : null}
         <span>Submit Direct Quote Request</span>
+      </button>
+    </form>
+  );
+};
+
+const B2BContactForm: React.FC<{ business: any }> = ({ business }) => {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const [nameVal, setNameVal] = useState('');
+  const [phoneVal, setPhoneVal] = useState('');
+  const [msgVal, setMsgVal] = useState(`Hi ${business.name || 'Merchant'}, I would like to contact you regarding business inquiries. Please get back to me.`);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const hoursMap = typeof business.hours === 'string' ? JSON.parse(business.hours) : business.hours;
+
+  if (hoursMap?.storeStatus === false) {
+    return (
+      <div className="p-8 bg-slate-50/50 border border-dashed border-slate-200 text-center text-slate-500 font-semibold text-xs leading-normal">
+        This merchant is temporarily offline. Contact messages are paused.
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nameVal || !phoneVal || !msgVal) {
+      alert('Please fill in all the details.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          businessId: business.id,
+          customerName: nameVal,
+          phone: phoneVal,
+          message: `[Contact-Form] ${msgVal}`
+        })
+      });
+      if (res.ok) {
+        setSuccess(true);
+        setNameVal('');
+        setPhoneVal('');
+        setMsgVal('');
+      } else {
+        alert('Failed to send contact message. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="text-center p-8 border border-dashed border-slate-200 rounded-none bg-slate-50/30 space-y-3">
+        <p className="text-slate-500 text-xs font-semibold leading-normal">
+          You must be logged in to send direct contact messages to this merchant.
+        </p>
+        <button
+          onClick={() => {
+            navigate(window.location.pathname, { replace: true, state: { openLogin: true } });
+          }}
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-2xs font-extrabold rounded-none transition-colors uppercase tracking-wider"
+        >
+          Sign In / Register
+        </button>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="p-6 bg-emerald-50 border border-emerald-150 text-center space-y-3 animate-in fade-in duration-200">
+        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+          <Check className="w-5 h-5" />
+        </div>
+        <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Message Sent Successfully!</h4>
+        <p className="text-[10px] text-slate-550 font-semibold leading-relaxed">
+          Your contact request has been sent to the business. They will contact you shortly.
+        </p>
+        <button
+          onClick={() => setSuccess(false)}
+          className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-2xs font-extrabold uppercase rounded-none text-slate-700 transition-colors"
+        >
+          Send Another Message
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Your Full Name</label>
+          <input
+            type="text"
+            required
+            placeholder="e.g. John Doe"
+            value={nameVal}
+            onChange={(e) => setNameVal(e.target.value)}
+            className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:border-indigo-500 font-semibold rounded-none"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Your Phone Number</label>
+          <input
+            type="tel"
+            required
+            placeholder="e.g. 9876543210"
+            value={phoneVal}
+            onChange={(e) => setPhoneVal(e.target.value)}
+            className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:border-indigo-500 font-semibold rounded-none"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Your Message</label>
+        <textarea
+          required
+          rows={4}
+          value={msgVal}
+          onChange={(e) => setMsgVal(e.target.value)}
+          placeholder="Type your message details here..."
+          className="w-full p-3 text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:border-indigo-500 font-semibold rounded-none resize-none"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider transition-all shadow hover:shadow-md flex items-center justify-center space-x-1.5 rounded-none"
+      >
+        {submitting ? <Loader2 className="w-4.5 h-4.5 animate-spin mr-1.5 text-white" /> : null}
+        <span>Send Contact Message</span>
       </button>
     </form>
   );
@@ -597,12 +778,33 @@ export const BusinessDetails: React.FC = () => {
   // Product detail modal state
   const [activeProductDetails, setActiveProductDetails] = useState<any | null>(null);
 
-  const handleFollowToggle = () => {
+  const handleFollowToggle = async () => {
     if (!business) return;
-    const newState = !isFollowing;
-    setIsFollowing(newState);
-    setFollowerCount(prev => newState ? prev + 1 : prev - 1);
-    localStorage.setItem(`follow_${business.id}`, newState ? 'true' : 'false');
+    if (!token) {
+      // Fallback for guest users
+      const newState = !isFollowing;
+      setIsFollowing(newState);
+      setFollowerCount(prev => newState ? prev + 1 : prev - 1);
+      localStorage.setItem(`follow_${business.id}`, newState ? 'true' : 'false');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/businesses/${business.id}/follow`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsFollowing(data.isFollowing);
+        setFollowerCount(data.followerCount);
+        localStorage.setItem(`follow_${business.id}`, data.isFollowing ? 'true' : 'false');
+      }
+    } catch (err) {
+      console.error('Failed to toggle follow status:', err);
+    }
   };
 
   // Gallery Lightbox State
@@ -626,7 +828,7 @@ export const BusinessDetails: React.FC = () => {
   const reviewsRef = React.useRef<HTMLDivElement>(null);
 
   // Active navigation tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'map' | 'reviews'>('catalog');
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'map' | 'reviews' | 'contact'>('catalog');
 
   // Phone reveal state
   const [phoneRevealed, setPhoneRevealed] = useState(false);
@@ -1008,7 +1210,7 @@ export const BusinessDetails: React.FC = () => {
     }
   };
 
-  const selectTab = (tabName: 'overview' | 'catalog' | 'map' | 'reviews') => {
+  const selectTab = (tabName: 'overview' | 'catalog' | 'map' | 'reviews' | 'contact') => {
     setActiveTab(tabName);
     const tabNav = document.getElementById('details-tabs-header');
     if (tabNav) {
@@ -1020,7 +1222,7 @@ export const BusinessDetails: React.FC = () => {
     }
   };
 
-  const scrollToSection = (_ref: React.RefObject<HTMLDivElement | null>, tabName: 'overview' | 'catalog' | 'map' | 'reviews') => {
+  const scrollToSection = (_ref: React.RefObject<HTMLDivElement | null>, tabName: 'overview' | 'catalog' | 'map' | 'reviews' | 'contact') => {
     selectTab(tabName);
   };
 
@@ -1083,11 +1285,17 @@ export const BusinessDetails: React.FC = () => {
       }
       setBusiness(data);
 
-      // Initialize follower states
-      const followState = localStorage.getItem(`follow_${data.id}`) === 'true';
+      // Initialize follower states from database list
+      const hoursMap = typeof data.hours === 'string' ? JSON.parse(data.hours) : (data.hours || {});
+      const list = hoursMap.followersList || [];
+      let followState = false;
+      if (user) {
+        followState = list.includes(user.id);
+      } else {
+        followState = localStorage.getItem(`follow_${data.id}`) === 'true';
+      }
       setIsFollowing(followState);
-      const baseFollowers = 0;
-      setFollowerCount(followState ? baseFollowers + 1 : baseFollowers);
+      setFollowerCount(data.followerCount || list.length || 0);
 
       fetchProducts(data.id);
       trackAction('visit', data.id);
@@ -1362,6 +1570,20 @@ export const BusinessDetails: React.FC = () => {
                   <span className="text-[9px] font-black tracking-wider text-slate-500 uppercase leading-tight">Add More Photo</span>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {hoursMap.storeStatus === false && (
+          <div className="bg-red-50 border border-red-200 p-4 text-left flex items-start space-x-3.5 animate-in slide-in-from-top-2 duration-300">
+            <div className="w-10 h-10 rounded-full bg-red-100 text-red-650 flex items-center justify-center shrink-0">
+              <span className="font-extrabold text-lg">⚠️</span>
+            </div>
+            <div className="space-y-1 flex-1 min-w-0">
+              <h4 className="text-xs font-black text-red-800 uppercase tracking-wider">Store Temporarily Offline</h4>
+              <p className="text-xs text-red-650 font-semibold leading-relaxed">
+                {hoursMap.whyStoreOff || 'This store is temporarily closed. Online inquiries and catalog requests are paused.'}
+              </p>
             </div>
           </div>
         )}
@@ -1776,6 +1998,15 @@ export const BusinessDetails: React.FC = () => {
           >
             Reviews
           </button>
+          <button
+            onClick={() => selectTab('contact')}
+            className={`py-3.5 border-b-2 transition-all whitespace-nowrap shrink-0 ${activeTab === 'contact'
+              ? 'border-blue-600 text-blue-600 font-black'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+          >
+            Contact Us
+          </button>
         </div>
       </section>
 
@@ -2062,6 +2293,7 @@ export const BusinessDetails: React.FC = () => {
                         href={getWhatsappUrl()}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackAction('whatsapp')}
                         className="inline-flex w-full md:w-auto items-center justify-center space-x-2 px-6 py-3 bg-[#008f5d] hover:bg-[#00764d] text-white font-black text-xs uppercase tracking-wider transition-all shadow hover:shadow-lg rounded-none"
                       >
                         <MessageSquare className="w-4 h-4 fill-white text-white" />
@@ -2499,6 +2731,7 @@ export const BusinessDetails: React.FC = () => {
                           href={getWhatsappUrl()}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => trackAction('whatsapp')}
                           className="inline-flex items-center space-x-1.5 px-4 py-2.5 border border-emerald-500/20 bg-emerald-50 hover:bg-[#008f5d] text-emerald-700 hover:text-white font-extrabold text-xs transition-all shadow-2xs hover:shadow-md"
                         >
                           <MessageSquare className="w-3.5 h-3.5 shrink-0" />
@@ -2618,6 +2851,27 @@ export const BusinessDetails: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: CONTACT US */}
+          {activeTab === 'contact' && (
+            <div className="animate-in fade-in duration-300">
+              <div className="rounded-none border border-slate-200 bg-white p-6 md:p-8 text-left space-y-6 shadow-glass-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/[0.02] rounded-none blur-3xl pointer-events-none"></div>
+
+                <div className="space-y-1 border-b border-slate-150 pb-4">
+                  <h3 className="text-lg font-black text-slate-900 flex items-center space-x-2">
+                    <Mail className="w-5 h-5 text-indigo-650" />
+                    <span>Contact {business.name}</span>
+                  </h3>
+                  <p className="text-2xs text-slate-400 font-semibold">
+                    Have questions or want to partner with us? Leave a message and our team will get back to you.
+                  </p>
+                </div>
+
+                <B2BContactForm business={business} />
               </div>
             </div>
           )}

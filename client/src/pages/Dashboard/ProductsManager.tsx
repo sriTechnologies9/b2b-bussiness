@@ -427,20 +427,41 @@ export const ProductsManager: React.FC = () => {
               <div className="text-left space-y-2">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-550 mb-1">Product Subcategory / Variety Tag</label>
                 <div className="flex flex-wrap gap-1">
-                  {['Rice', 'Curry', 'Non-Veg', 'Beverages', 'Sweets', 'Snacks', 'Electronics', 'Plumbing', 'General'].map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => setSubCategory(tag)}
-                      className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all ${
-                        subCategory.toLowerCase() === tag.toLowerCase()
-                          ? 'bg-indigo-650 border-indigo-650 text-white shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
+                  {['Rice', 'Curry', 'Non-Veg', 'Beverages', 'Sweets', 'Snacks', 'Electronics', 'Plumbing', 'General'].map(tag => {
+                    const isSelected = subCategory.split(',').map(s => s.trim().toLowerCase()).includes(tag.toLowerCase());
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          let tags = subCategory.split(',').map(s => s.trim()).filter(Boolean);
+                          if (tag.toLowerCase() === 'general') {
+                            tags = ['General'];
+                          } else {
+                            tags = tags.filter(t => t.toLowerCase() !== 'general');
+                            const idx = tags.findIndex(t => t.toLowerCase() === tag.toLowerCase());
+                            if (idx > -1) {
+                              tags.splice(idx, 1);
+                            } else {
+                              tags.push(tag);
+                            }
+                          }
+                          if (tags.length === 0) {
+                            setSubCategory('General');
+                          } else {
+                            setSubCategory(tags.join(', '));
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-650 border-indigo-650 text-white shadow-xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
                 </div>
                 <input
                   type="text"
