@@ -1,19 +1,17 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createRfqSchema, submitProposalSchema } from '../schemas/rfq.schema';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // POST /api/rfqs - Submit a new RFQ (requires CUSTOMER auth)
-router.post('/', authenticateToken, requireRole(['CUSTOMER', 'OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireRole(['CUSTOMER', 'OWNER', 'ADMIN']), validate(createRfqSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { categoryId, title, message, budget, city } = req.body;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    if (!categoryId || !title || !message || !city) {
-      return res.status(400).json({ error: 'Missing required RFQ fields' });
-    }
 
     const rfq = await prisma.rfq.create({
       data: {
@@ -39,6 +37,10 @@ router.get('/my-rfqs', authenticateToken, requireRole(['CUSTOMER', 'OWNER', 'ADM
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const rfqs = await prisma.rfq.findMany({
       where: { customerId: req.user.id },
       include: {
@@ -55,7 +57,9 @@ router.get('/my-rfqs', authenticateToken, requireRole(['CUSTOMER', 'OWNER', 'ADM
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     return res.json(rfqs);
@@ -76,6 +80,10 @@ router.get('/market', authenticateToken, requireRole(['OWNER', 'ADMIN']), async 
 
     const categoryIds = ownerBusinesses.map(b => b.categoryId);
 
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     // Get all OPEN RFQs matching these categories
     const rfqs = await prisma.rfq.findMany({
       where: {
@@ -95,7 +103,9 @@ router.get('/market', authenticateToken, requireRole(['OWNER', 'ADMIN']), async 
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     return res.json(rfqs);
@@ -105,15 +115,11 @@ router.get('/market', authenticateToken, requireRole(['OWNER', 'ADMIN']), async 
 });
 
 // POST /api/rfqs/:id/proposals - Submit a proposal/bid for an RFQ (requires OWNER/ADMIN auth)
-router.post('/:id/proposals', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/proposals', authenticateToken, requireRole(['OWNER', 'ADMIN']), validate(submitProposalSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { businessId, price, message } = req.body;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    if (!businessId || !price || !message) {
-      return res.status(400).json({ error: 'Missing required proposal fields' });
-    }
 
     // Verify the business belongs to the owner
     const business = await prisma.business.findFirst({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { ClipboardList, Sparkles, Loader2, Calendar, Building2, ArrowRight } from 'lucide-react';
 
 export const UserInquiries: React.FC = () => {
@@ -11,11 +12,8 @@ export const UserInquiries: React.FC = () => {
     const fetchInquiries = async () => {
       if (!token) return;
       try {
-        const res = await fetch('/api/leads/my-inquiries', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const data = await apiClient.get('/leads/my-inquiries');
+        if (data) {
           setInquiries(data);
         }
       } catch (err) {

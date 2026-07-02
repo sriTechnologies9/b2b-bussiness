@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { 
   Plus, 
   CheckCircle, 
@@ -46,11 +47,8 @@ export const UserRfqs: React.FC = () => {
   const fetchRfqs = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/rfqs/my-rfqs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get('/rfqs/my-rfqs');
+      if (data) {
         setRfqs(data);
       }
     } catch (err) {
@@ -62,9 +60,8 @@ export const UserRfqs: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/businesses/categories');
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get('/businesses/categories');
+      if (data) {
         setCategories(data);
       }
     } catch (err) {
@@ -83,25 +80,13 @@ export const UserRfqs: React.FC = () => {
     setSubmittingPost(true);
 
     try {
-      const res = await fetch('/api/rfqs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          categoryId,
-          title,
-          message,
-          budget: budget ? parseFloat(budget) : null,
-          city
-        })
+      await apiClient.post('/rfqs', {
+        categoryId,
+        title,
+        message,
+        budget: budget ? parseFloat(budget) : null,
+        city
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to post RFQ');
-      }
 
       setIsPostOpen(false);
       setCategoryId('');
@@ -120,17 +105,8 @@ export const UserRfqs: React.FC = () => {
   const handleDeleteRfq = async (rfqId: string) => {
     if (!window.confirm('Are you sure you want to delete this RFQ? This action cannot be undone and will delete all received proposals.')) return;
     try {
-      const res = await fetch(`/api/rfqs/${rfqId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        setRfqs(rfqs.filter(r => r.id !== rfqId));
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete RFQ');
-      }
+      await apiClient.delete(`/rfqs/${rfqId}`);
+      setRfqs(rfqs.filter(r => r.id !== rfqId));
     } catch (err) {
       console.error(err);
       alert('Error occurred while deleting RFQ');
@@ -140,17 +116,8 @@ export const UserRfqs: React.FC = () => {
   const handleAcceptProposal = async (proposalId: string) => {
     if (!window.confirm('Are you sure you want to accept this quote? This will close the RFQ and decline all other quotes.')) return;
     try {
-      const res = await fetch(`/api/rfqs/proposals/${proposalId}/accept`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        fetchRfqs();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to accept proposal');
-      }
+      await apiClient.post(`/rfqs/proposals/${proposalId}/accept`, {});
+      fetchRfqs();
     } catch (err) {
       console.error(err);
     }

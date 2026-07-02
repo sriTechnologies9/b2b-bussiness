@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Send, IndianRupee, Loader2, X, Sparkles } from 'lucide-react';
+import { apiClient } from '../../api/client';
 
 export const RfqMarket: React.FC = () => {
   const { token } = useAuth();
@@ -21,55 +22,62 @@ export const RfqMarket: React.FC = () => {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchMarketRfqs = async () => {
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchMarketRfqs = async (pageNum = 1) => {
     if (!token) return;
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const res = await fetch('/api/rfqs/market', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get(`/rfqs/market?page=${pageNum}&limit=20`);
+      if (pageNum === 1) {
         setRfqs(data);
+      } else {
+        setRfqs(prev => [...prev, ...data]);
       }
+      setHasMore(data.length === 20);
     } catch (err) {
       console.error(err);
+    } finally {
+      if (pageNum === 1) setLoading(false);
+      else setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchMarketRfqs(nextPage);
   };
 
   const fetchMyBusinesses = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/businesses/my-listings', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBusinesses(data);
-        if (data.length > 0) {
-          setBusinessId(data[0].id);
-        }
+      const data = await apiClient.get('/businesses/my-listings');
+      setBusinesses(data);
+      if (data.length > 0) {
+        setBusinessId(data[0].id);
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/businesses/categories');
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-      }
+      const data = await apiClient.get('/businesses/categories');
+      setCategories(data);
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchMarketRfqs();
+    setPage(1);
+    fetchMarketRfqs(1);
     fetchMyBusinesses();
     fetchCategories();
   }, [token]);
@@ -115,29 +123,18 @@ export const RfqMarket: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`/api/rfqs/${selectedRfq.id}/proposals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          businessId,
-          price: parseFloat(price),
-          message
-        })
+      await apiClient.post(`/rfqs/${selectedRfq.id}/proposals`, {
+        businessId,
+        price: parseFloat(price),
+        message
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit quote');
-      }
 
       // Refresh list, close modal, clean form
       setSelectedRfq(null);
       setPrice('');
       setMessage('');
-      fetchMarketRfqs();
+      setPage(1);
+      fetchMarketRfqs(1);
     } catch (err: any) {
       setSubmitError(err.message);
     } finally {
@@ -273,6 +270,19 @@ export const RfqMarket: React.FC = () => {
         ) : (
           <div className="text-center py-20 border border-dashed border-slate-300 rounded-2xl text-slate-500 text-sm">
             No active RFQ leads match your business category in the market currently. Ensure your category tags are updated!
+          </div>
+        )}
+        
+        {hasMore && (
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="inline-flex items-center px-6 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-sm font-bold text-slate-700 shadow-sm transition-colors disabled:opacity-50"
+            >
+              {loadingMore && <Loader2 className="w-4 h-4 mr-2 animate-spin text-slate-400" />}
+              Load More RFQs
+            </button>
           </div>
         )}
       </div>

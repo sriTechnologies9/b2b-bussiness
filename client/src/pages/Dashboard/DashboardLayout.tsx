@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Store, ClipboardList, CreditCard, ArrowLeft, Loader2, Layers, LogOut, Tag, User, Menu, X, ChevronRight, Star, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
+import { apiClient } from '../../api/client';
 import { Overview } from './Overview';
 import { MyBusiness } from './MyBusiness';
 import { LeadsManager } from './LeadsManager';
@@ -43,15 +43,7 @@ export const DashboardLayout: React.FC = () => {
     setSubmittingAuth(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: dealerEmail, password: dealerPassword })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
-      }
+      const data = await apiClient.post('/auth/login', { email: dealerEmail, password: dealerPassword });
 
       if (data.user.role !== 'OWNER') {
         throw new Error('Access Denied: This account is not registered as a Business Owner.');

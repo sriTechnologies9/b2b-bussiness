@@ -8,7 +8,9 @@ import {
   Camera, Bookmark, Edit, UserPlus, TrendingUp, Facebook, Instagram, Youtube, Twitter
 } from 'lucide-react';
 import { MapWidget } from '../components/MapWidget';
+
 import { LeadModal } from '../components/LeadModal';
+import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 const categoryServices: Record<string, string[]> = {
@@ -353,25 +355,22 @@ const B2BQuoteRequestForm: React.FC<{ business: any }> = ({ business }) => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          businessId: business.id,
-          customerName: nameVal,
-          phone: phoneVal,
-          message: msgVal
-        })
+      const data = await apiClient.post('/leads', {
+        businessId: business.id,
+        customerName: nameVal,
+        phone: phoneVal,
+        message: msgVal
       });
-      if (res.ok) {
+      if (data) {
         setInquirySuccess(true);
         setNameVal('');
         setPhoneVal('');
       } else {
         alert('Failed to send inquiry. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Failed to send inquiry. Please try again.');
     } finally {
       setInquirySubmitting(false);
     }
@@ -497,17 +496,13 @@ const B2BContactForm: React.FC<{ business: any }> = ({ business }) => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          businessId: business.id,
-          customerName: nameVal,
-          phone: phoneVal,
-          message: `[Contact-Form] ${msgVal}`
-        })
+      const data = await apiClient.post('/leads', {
+        businessId: business.id,
+        customerName: nameVal,
+        phone: phoneVal,
+        message: `[Contact-Form] ${msgVal}`
       });
-      if (res.ok) {
+      if (data) {
         setSuccess(true);
         setNameVal('');
         setPhoneVal('');
@@ -515,8 +510,9 @@ const B2BContactForm: React.FC<{ business: any }> = ({ business }) => {
       } else {
         alert('Failed to send contact message. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Failed to send contact message. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -681,23 +677,11 @@ export const BusinessDetails: React.FC = () => {
         googleEmbedUrl: finalEmbedUrl
       };
 
-      const res = await fetch(`/api/businesses/${business.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          latitude: latVal,
-          longitude: lngVal,
-          hours: JSON.stringify(updatedHours)
-        })
+      await apiClient.put(`/businesses/${business.id}`, {
+        latitude: latVal,
+        longitude: lngVal,
+        hours: JSON.stringify(updatedHours)
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to update location details');
-      }
 
       setEditingMap(false);
       fetchDetails();
@@ -716,19 +700,7 @@ export const BusinessDetails: React.FC = () => {
         bodyData = { [fieldName]: editValue };
       }
 
-      const res = await fetch(`/api/businesses/${business.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(bodyData)
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to update business');
-      }
+      await apiClient.put(`/businesses/${business.id}`, bodyData);
 
       setEditingField(null);
       fetchDetails();
@@ -790,14 +762,8 @@ export const BusinessDetails: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`/api/businesses/${business.id}/follow`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.post(`/businesses/${business.id}/follow`, {});
+      if (data) {
         setIsFollowing(data.isFollowing);
         setFollowerCount(data.followerCount);
         localStorage.setItem(`follow_${business.id}`, data.isFollowing ? 'true' : 'false');
@@ -1241,9 +1207,8 @@ export const BusinessDetails: React.FC = () => {
   const fetchProducts = async (bizId: string) => {
     setProductsLoading(true);
     try {
-      const res = await fetch(`/api/businesses/${bizId}/products`);
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get(`/businesses/${bizId}/products`);
+      if (data) {
         setProducts(data);
       }
     } catch (err) {
@@ -1258,18 +1223,9 @@ export const BusinessDetails: React.FC = () => {
     if (!targetBizId) return;
 
     try {
-      const headers: any = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      await fetch('/api/leads/track', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          businessId: targetBizId,
-          action: actionType
-        })
+      await apiClient.post('/leads/track', {
+        businessId: targetBizId,
+        action: actionType
       });
     } catch (err) {
       console.error('Failed to log lead action tracking:', err);
@@ -1278,11 +1234,7 @@ export const BusinessDetails: React.FC = () => {
 
   const fetchDetails = async () => {
     try {
-      const res = await fetch(`/api/businesses/slug/${slug}`);
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load details');
-      }
+      const data = await apiClient.get(`/businesses/slug/${slug}`);
       setBusiness(data);
 
       // Initialize follower states from database list
@@ -1317,23 +1269,11 @@ export const BusinessDetails: React.FC = () => {
     setSubmittingReview(true);
 
     try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          businessId: business.id,
-          rating,
-          comment
-        })
+      await apiClient.post('/reviews', {
+        businessId: business.id,
+        rating,
+        comment
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit review');
-      }
 
       setComment('');
       setRating(5);
@@ -1609,21 +1549,11 @@ export const BusinessDetails: React.FC = () => {
                       if (newLogo !== null) {
                         try {
                           const updatedHours = { ...hoursMap, logoUrl: newLogo.trim() };
-                          const res = await fetch(`/api/businesses/${business.id}`, {
-                            method: 'PUT',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ hours: JSON.stringify(updatedHours) })
-                          });
-                          if (res.ok) {
-                            fetchDetails();
-                          } else {
-                            alert('Failed to update profile logo');
-                          }
+                          await apiClient.put(`/businesses/${business.id}`, { hours: JSON.stringify(updatedHours) });
+                          fetchDetails();
                         } catch (err) {
                           console.error(err);
+                          alert('Failed to update profile logo');
                         }
                       }
                     }}
@@ -1721,18 +1651,10 @@ export const BusinessDetails: React.FC = () => {
                         onClick={async () => {
                           if (!token || !business) return;
                           try {
-                            const res = await fetch(`/api/businesses/${business.id}`, {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                              },
-                              body: JSON.stringify({
-                                address: editValue.address,
-                                city: editValue.city
-                              })
+                            await apiClient.put(`/businesses/${business.id}`, {
+                              address: editValue.address,
+                              city: editValue.city
                             });
-                            if (!res.ok) throw new Error('Failed to update address');
                             setEditingField(null);
                             fetchDetails();
                           } catch (err: any) {

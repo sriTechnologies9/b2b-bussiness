@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Phone, Sparkles, RefreshCw, HelpCircle } from 'lucide-react';
+import { Phone, Sparkles, RefreshCw, HelpCircle, Loader2 } from 'lucide-react';
+import { apiClient } from '../../api/client';
 
 const COLUMNS = [
   { id: 'NEW', title: 'New Interest 🆕', color: 'border-t-brand-500 bg-brand-500/5' },
@@ -25,54 +26,55 @@ export const LeadsManager: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
-  const fetchLeadsData = async () => {
-    if (!token) return;
-    try {
-      const resBiz = await fetch('/api/businesses/my-listings', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (resBiz.ok) {
-        const bizList = await resBiz.json();
-        if (bizList.length > 0) {
-          const myBiz = bizList[0];
-          setBusiness(myBiz);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-          // Fetch leads
-          const resLeads = await fetch(`/api/leads/business/${myBiz.id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (resLeads.ok) {
-            const data = await resLeads.json();
-            setLeads(data);
-          }
+  const fetchLeadsData = async (pageNum = 1) => {
+    if (!token) return;
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const bizList = await apiClient.get('/businesses/my-listings');
+      if (bizList.length > 0) {
+        const myBiz = bizList[0];
+        setBusiness(myBiz);
+
+        // Fetch leads
+        const data = await apiClient.get(`/leads/business/${myBiz.id}?page=${pageNum}&limit=50`);
+        if (pageNum === 1) {
+          setLeads(data);
+        } else {
+          setLeads(prev => [...prev, ...data]);
         }
+        setHasMore(data.length === 50);
       }
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (pageNum === 1) setLoading(false);
+      else setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchLeadsData();
+    setPage(1);
+    fetchLeadsData(1);
   }, [token]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchLeadsData(nextPage);
+  };
 
   // Update lead status
   const moveLeadStatus = async (leadId: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/leads/${leadId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (res.ok) {
-        // Optimistically update status locally
-        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
-      }
+      await apiClient.put(`/leads/${leadId}/status`, { status: newStatus });
+      // Optimistically update status locally
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     } catch (err) {
       console.error(err);
     }
@@ -82,15 +84,9 @@ export const LeadsManager: React.FC = () => {
   const rescoreLead = async (leadId: string) => {
     setRescoringId(leadId);
     try {
-      const res = await fetch(`/api/leads/${leadId}/rescore`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        // Update locally
-        setLeads(prev => prev.map(l => l.id === leadId ? updated : l));
-      }
+      const updated = await apiClient.post(`/leads/${leadId}/rescore`, {});
+      // Update locally
+      setLeads(prev => prev.map(l => l.id === leadId ? updated : l));
     } catch (err) {
       console.error(err);
     } finally {
@@ -176,7 +172,7 @@ export const LeadsManager: React.FC = () => {
           </div>
 
           <button
-            onClick={fetchLeadsData}
+            onClick={() => { setPage(1); fetchLeadsData(1); }}
             className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold rounded-none text-slate-700"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -528,6 +524,19 @@ export const LeadsManager: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center pt-6">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="inline-flex items-center px-6 py-2.5 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50"
+          >
+            {loadingMore && <Loader2 className="w-4 h-4 mr-2 animate-spin text-slate-400" />}
+            Load More Leads
+          </button>
         </div>
       )}
     </div>

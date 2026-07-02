@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { 
   ClipboardList, 
   MessageSquare, 
@@ -28,30 +29,15 @@ export const UserDashboardHome: React.FC = () => {
     const fetchDashboardData = async () => {
       if (!token) return;
       try {
-        const [inqRes, rfqRes, revRes] = await Promise.all([
-          fetch('/api/leads/my-inquiries', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/rfqs/my-rfqs', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/reviews/my-reviews', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+        const [inqData, rfqData, revData] = await Promise.all([
+          apiClient.get('/leads/my-inquiries').catch(() => null),
+          apiClient.get('/rfqs/my-rfqs').catch(() => null),
+          apiClient.get('/reviews/my-reviews').catch(() => null)
         ]);
 
-        if (inqRes.ok) {
-          const inqData = await inqRes.json();
-          setInquiries(inqData);
-        }
-        if (rfqRes.ok) {
-          const rfqData = await rfqRes.json();
-          setRfqs(rfqData);
-        }
-        if (revRes.ok) {
-          const revData = await revRes.json();
-          setReviews(revData);
-        }
+        if (inqData) setInquiries(inqData);
+        if (rfqData) setRfqs(rfqData);
+        if (revData) setReviews(revData);
       } catch (err) {
         console.error('Error loading customer dashboard home statistics:', err);
       } finally {

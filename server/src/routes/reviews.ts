@@ -1,25 +1,19 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createReviewSchema } from '../schemas/review.schema';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // POST /api/reviews - Submit review
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, validate(createReviewSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
     const { businessId, rating, comment } = req.body;
-
-    if (!businessId || rating === undefined || !comment) {
-      return res.status(400).json({ error: 'Missing required review fields' });
-    }
-
     const rateVal = parseInt(rating);
-    if (isNaN(rateVal) || rateVal < 1 || rateVal > 5) {
-      return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
-    }
 
     const business = await prisma.business.findUnique({ where: { id: businessId } });
     if (!business) {
@@ -29,6 +23,18 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     // Optional: Prevent self-reviewing
     if (business.userId === req.user.id) {
       return res.status(400).json({ error: 'You cannot review your own business listing' });
+    }
+
+    // Prevent duplicate reviews from the same user for the same business
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        businessId,
+        userId: req.user.id
+      }
+    });
+
+    if (existingReview) {
+      return res.status(400).json({ error: 'You have already submitted a review for this business' });
     }
 
     // Create review
@@ -60,6 +66,10 @@ router.get('/my-reviews', authenticateToken, async (req: AuthenticatedRequest, r
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const reviews = await prisma.review.findMany({
       where: { userId: req.user.id },
       include: {
@@ -70,7 +80,9 @@ router.get('/my-reviews', authenticateToken, async (req: AuthenticatedRequest, r
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     return res.json(reviews);

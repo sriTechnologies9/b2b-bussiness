@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Search, MapPin, Sparkles, Loader2, ArrowRight, ShoppingBag
 } from 'lucide-react';
+import { apiClient } from '../api/client';
 
 const CATEGORY_COLORS: { [key: string]: string } = {
   restaurants: 'text-rose-600 bg-rose-50 border-rose-100',
@@ -31,12 +32,14 @@ export const ProductsFeed: React.FC = () => {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12); // Defaults to 12 (2 rows of 6 items on desktop)
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Reset pagination when search parameters change
   useEffect(() => {
     setCurrentPage(1);
-    setItemsPerPage(12);
+    setProducts([]);
+    loadDirectoryData(1);
   }, [searchQuery, cityQuery, filterType]);
 
   useEffect(() => {
@@ -50,55 +53,39 @@ export const ProductsFeed: React.FC = () => {
     }
   }, [searchParams]);
 
-  const loadDirectoryData = async () => {
+  const loadDirectoryData = async (page = 1) => {
     try {
-      setLoading(true);
-      const resProd = await fetch('/api/businesses/all/products');
-      if (resProd.ok) {
-        const dataProd = await resProd.json();
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('query', searchQuery);
+      if (cityQuery) params.append('city', cityQuery);
+      if (filterType !== 'all') params.append('filterType', filterType);
+      params.append('page', page.toString());
+      params.append('limit', '12');
+
+      const dataProd = await apiClient.get(`/businesses/all/products?${params.toString()}`);
+      
+      if (page === 1) {
         setProducts(dataProd);
+      } else {
+        setProducts(prev => [...prev, ...dataProd]);
       }
+      setHasMore(dataProd.length === 12);
     } catch (err) {
       console.error('Failed to load directory data', err);
     } finally {
-      setLoading(false);
+      if (page === 1) setLoading(false);
+      else setLoadingMore(false);
     }
   };
 
-  useEffect(() => {
-    loadDirectoryData();
-  }, []);
-
-  // Filter listings based on query parameters
-  const filtered = products.filter((item) => {
-    // Type Filter
-    if (filterType === 'products' && item.isOffer) return false;
-    if (filterType === 'offers' && !item.isOffer) return false;
-
-    // Search query match
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchName = item.name.toLowerCase().includes(q);
-      const matchDesc = item.description.toLowerCase().includes(q);
-      if (!matchName && !matchDesc) return false;
-    }
-
-    // City match
-    if (cityQuery) {
-      const c = cityQuery.toLowerCase();
-      const matchCity = item.business?.city?.toLowerCase().includes(c);
-      if (!matchCity) return false;
-    }
-
-    return true;
-  });
-
-  // Slice calculations for paginated items
-  const totalItems = filtered.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    loadDirectoryData(nextPage);
+  };
 
   return (
     <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 py-8 space-y-8">
@@ -184,10 +171,10 @@ export const ProductsFeed: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
             <span className="text-xs text-slate-500 font-semibold">Filtering product offerings...</span>
           </div>
-        ) : currentItems.length > 0 ? (
+        ) : products.length > 0 ? (
           <div className="space-y-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 items-stretch">
-              {currentItems.map((item) => (
+              {products.map((item) => (
                 <div 
                   key={item.id} 
                   className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between text-left relative group h-full hover:-translate-y-0.5 duration-300"
@@ -308,56 +295,16 @@ export const ProductsFeed: React.FC = () => {
             </div>
 
             {/* Pagination & Load More Actions */}
-            {totalPages > 1 && (
+            {hasMore && (
               <div className="flex flex-col items-center justify-center pt-8 space-y-5">
-                {/* View More Button (Loads 2 more rows of 12 items) */}
-                {indexOfLastItem < totalItems && (
-                  <button
-                    onClick={() => setItemsPerPage(prev => prev + 12)}
-                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow hover:shadow-md hover:-translate-y-0.5"
-                  >
-                    View More Products
-                  </button>
-                )}
-
-                {/* Page Navigator */}
-                <div className="flex flex-col sm:flex-row items-center justify-between w-full pt-4 border-t border-slate-100 gap-4">
-                  <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalItems)} of {totalItems} items
-                  </span>
-                  
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-2 border border-slate-200 text-slate-655 rounded-lg text-xs font-bold hover:bg-slate-50 disabled:opacity-40"
-                    >
-                      Prev
-                    </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                          currentPage === page
-                            ? 'bg-indigo-650 text-white shadow'
-                            : 'border border-slate-200 text-slate-655 hover:bg-slate-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-2 border border-slate-200 text-slate-655 rounded-lg text-xs font-bold hover:bg-slate-50 disabled:opacity-40"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 inline-flex items-center"
+                >
+                  {loadingMore && <Loader2 className="w-4 h-4 mr-2 animate-spin text-slate-400" />}
+                  View More Products
+                </button>
               </div>
             )}
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { Plus, Edit, Trash2, IndianRupee, Tag, Sparkles, Loader2, Image, ToggleLeft, ToggleRight, Check } from 'lucide-react';
 
 export const ProductsManager: React.FC = () => {
@@ -31,15 +32,10 @@ export const ProductsManager: React.FC = () => {
   const fetchMyBusinesses = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/businesses/my-listings', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBusinesses(data);
-        if (data.length > 0) {
-          setSelectedBizId(data[0].id);
-        }
+      const data = await apiClient.get('/businesses/my-listings');
+      setBusinesses(data);
+      if (data.length > 0) {
+        setSelectedBizId(data[0].id);
       }
     } catch (err) {
       console.error(err);
@@ -52,11 +48,8 @@ export const ProductsManager: React.FC = () => {
     if (!bizId) return;
     setProductsLoading(true);
     try {
-      const res = await fetch(`/api/businesses/${bizId}/products`);
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(data);
-      }
+      const data = await apiClient.get(`/businesses/${bizId}/products`);
+      setProducts(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -123,22 +116,14 @@ export const ProductsManager: React.FC = () => {
 
     const isEditing = !!editingProduct;
     const url = isEditing 
-      ? `/api/businesses/products/manage/${editingProduct.id}` 
-      : '/api/businesses/products/manage';
-    const method = isEditing ? 'PUT' : 'POST';
+      ? `/businesses/products/manage/${editingProduct.id}` 
+      : '/businesses/products/manage';
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to save product');
+      if (isEditing) {
+        await apiClient.put(url, payload);
+      } else {
+        await apiClient.post(url, payload);
       }
 
       setIsModalOpen(false);
@@ -153,17 +138,10 @@ export const ProductsManager: React.FC = () => {
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this product/offer listing?')) return;
     try {
-      const res = await fetch(`/api/businesses/products/manage/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchProducts(selectedBizId);
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete product');
-      }
-    } catch (err) {
+      await apiClient.delete(`/businesses/products/manage/${id}`);
+      fetchProducts(selectedBizId);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete product');
       console.error(err);
     }
   };

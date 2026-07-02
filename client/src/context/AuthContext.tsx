@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { apiClient } from '../api/client';
 
 export interface User {
   id: string;
@@ -32,20 +33,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (authToken: string) => {
     try {
-      const res = await fetch('/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        // Token expired or invalid
-        logout();
-      }
+      const data = await apiClient.get('/auth/me');
+      setUser(data.user);
     } catch (err) {
       console.error('Failed to load profile', err);
+      // Token expired or invalid
+      logout();
     } finally {
       setLoading(false);
     }

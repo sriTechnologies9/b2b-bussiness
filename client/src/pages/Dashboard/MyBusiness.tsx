@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Sparkles, BadgeCheck, FileText, Smartphone, Mail, FileUp, Loader2 } from 'lucide-react';
+import { apiClient } from '../../api/client';
 
 const INDIAN_AREAS = [
   { address: 'Road No 12, Banjara Hills', city: 'Hyderabad', state: 'Telangana' },
@@ -116,24 +117,19 @@ export const MyBusiness: React.FC = () => {
     try {
       // Fetch categories
       let catList: any[] = [];
-      const resCats = await fetch('/api/businesses/categories');
-      if (resCats.ok) {
-        const catData = await resCats.json();
+      try {
+        const catData = await apiClient.get('/businesses/categories');
         setCategories(catData);
         catList = catData;
-      }
+      } catch (err) {}
 
       // Fetch my business
-      const resBiz = await fetch('/api/businesses/my-listings', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (resBiz.ok) {
-        const bizList = await resBiz.json();
-        if (bizList.length > 0) {
-          const myBiz = bizList[0];
-          setBusiness(myBiz);
-          
-          const matchedCat = catList.find((c: any) => c.id === myBiz.categoryId);
+      const bizList = await apiClient.get('/businesses/my-listings');
+      if (bizList.length > 0) {
+        const myBiz = bizList[0];
+        setBusiness(myBiz);
+        
+        const matchedCat = catList.find((c: any) => c.id === myBiz.categoryId);
           
           setFormData({
             name: myBiz.name,
@@ -160,7 +156,6 @@ export const MyBusiness: React.FC = () => {
             setDocumentUploaded(true);
           }
         }
-      }
     } catch (err) {
       console.error('Failed to load profile details', err);
     } finally {
@@ -274,27 +269,20 @@ export const MyBusiness: React.FC = () => {
     setSubmitting(true);
 
     const isEditing = !!business;
-    const url = isEditing ? `/api/businesses/${business.id}` : '/api/businesses';
-    const method = isEditing ? 'PUT' : 'POST';
+    const url = isEditing ? `/businesses/${business.id}` : '/businesses';
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          hours: JSON.stringify(formData.hours),
-          latitude: formData.latitude ? parseFloat(formData.latitude) : 17.3850,
-          longitude: formData.longitude ? parseFloat(formData.longitude) : 78.4867
-        })
-      });
+      const payload = {
+        ...formData,
+        hours: JSON.stringify(formData.hours),
+        latitude: formData.latitude ? parseFloat(formData.latitude) : 17.3850,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : 78.4867
+      };
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to save profile');
+      if (isEditing) {
+        await apiClient.put(url, payload);
+      } else {
+        await apiClient.post(url, payload);
       }
 
       setSuccessMsg(isEditing ? 'Profile updated successfully!' : 'Profile created successfully!');
@@ -302,13 +290,10 @@ export const MyBusiness: React.FC = () => {
       // Update local storage/context user listings if new creation
       if (!isEditing) {
         // reload me profile
-        const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (meRes.ok) {
-          const meData = await meRes.json();
+        try {
+          const meData = await apiClient.get('/auth/me');
           updateUser(meData.user);
-        }
+        } catch (err) {}
       }
 
       loadData();
@@ -326,19 +311,9 @@ export const MyBusiness: React.FC = () => {
   const saveGallery = async (newGallery: string) => {
     if (!business) return;
     try {
-      const res = await fetch(`/api/businesses/${business.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          gallery: newGallery
-        })
+      await apiClient.put(`/businesses/${business.id}`, {
+        gallery: newGallery
       });
-      if (!res.ok) {
-        throw new Error('Failed to auto-save gallery changes');
-      }
     } catch (err) {
       console.error('Failed to auto-save gallery:', err);
     }
@@ -457,25 +432,15 @@ export const MyBusiness: React.FC = () => {
       const selectedCat = categories.find(c => c.id === formData.categoryId);
       const categoryName = selectedCat ? selectedCat.name : 'Service';
 
-      const res = await fetch('/api/businesses/generate-description', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          category: categoryName,
-          location: formData.city
-        })
+      const data = await apiClient.post('/businesses/generate-description', {
+        name: formData.name,
+        category: categoryName,
+        location: formData.city
       });
-      const data = await res.json();
-      if (res.ok) {
-        setFormData(prev => ({
-          ...prev,
-          description: data.description
-        }));
-      }
+      setFormData(prev => ({
+        ...prev,
+        description: data.description
+      }));
     } catch (err) {
       console.error(err);
     } finally {
@@ -494,22 +459,12 @@ export const MyBusiness: React.FC = () => {
       const selectedCat = categories.find(c => c.id === formData.categoryId);
       const categoryName = selectedCat ? selectedCat.name : 'Service';
 
-      const res = await fetch('/api/businesses/generate-seo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          category: categoryName,
-          location: formData.city
-        })
+      const data = await apiClient.post('/businesses/generate-seo', {
+        name: formData.name,
+        category: categoryName,
+        location: formData.city
       });
-      const data = await res.json();
-      if (res.ok) {
-        setSeoResult(data);
-      }
+      setSeoResult(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -528,25 +483,14 @@ export const MyBusiness: React.FC = () => {
     const code = otpCodes[type];
     setVerifyingOtp(prev => ({ ...prev, [type]: true }));
     try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          type,
-          code,
-          value: type === 'phone' ? formData.phone : formData.email
-        })
+      await apiClient.post('/auth/verify-otp', {
+        type,
+        code,
+        value: type === 'phone' ? formData.phone : formData.email
       });
-      const data = await res.json();
-      if (res.ok) {
-        setOtpVerified(prev => ({ ...prev, [type]: true }));
-      } else {
-        alert(data.error || 'Verification failed');
-      }
-    } catch (err) {
+      setOtpVerified(prev => ({ ...prev, [type]: true }));
+    } catch (err: any) {
+      alert(err.message || 'Verification failed');
       console.error(err);
     } finally {
       setVerifyingOtp(prev => ({ ...prev, [type]: false }));
@@ -561,22 +505,11 @@ export const MyBusiness: React.FC = () => {
     }
     setGstVerifying(true);
     try {
-      const res = await fetch('/api/auth/verify-gst', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ gstNumber: gstNum })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setGstVerified(true);
-        setGstDetails(data);
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
+      const data = await apiClient.post('/auth/verify-gst', { gstNumber: gstNum });
+      setGstVerified(true);
+      setGstDetails(data);
+    } catch (err: any) {
+      alert(err.message);
       console.error(err);
     } finally {
       setGstVerifying(false);
@@ -601,14 +534,9 @@ export const MyBusiness: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`/api/businesses/${business.id}/verify`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        alert('Congratulations! Your business is now verified on LocalConnect!');
-        loadData();
-      }
+      await apiClient.post(`/businesses/${business.id}/verify`, {});
+      alert('Congratulations! Your business is now verified on LocalConnect!');
+      loadData();
     } catch (err) {
       console.error(err);
     }

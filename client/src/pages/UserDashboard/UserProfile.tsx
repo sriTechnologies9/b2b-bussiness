@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { User, Mail, Phone, ShieldCheck, CheckCircle2, Edit2, Save, X, Sparkles, Loader2, Lock } from 'lucide-react';
 
 export const UserProfile: React.FC = () => {
@@ -37,19 +38,7 @@ export const UserProfile: React.FC = () => {
     }
 
     try {
-      const res = await fetch('/api/auth/password', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to update password');
-      }
+      await apiClient.put('/auth/password', { currentPassword, newPassword });
 
       setSecuritySuccess('Password successfully modified!');
       setCurrentPassword('');
@@ -75,19 +64,7 @@ export const UserProfile: React.FC = () => {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, phone })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to update profile');
-      }
+      const data = await apiClient.put('/auth/profile', { name, phone });
 
       login(data.token, data.user);
       setSuccessMsg('Profile details updated successfully!');

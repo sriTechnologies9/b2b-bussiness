@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { UserProfile } from '../UserDashboard/UserProfile';
+import { apiClient } from '../../api/client';
+import { UsersTab } from './tabs/UsersTab';
+import { RfqsTab } from './tabs/RfqsTab';
+import { ReviewsTab } from './tabs/ReviewsTab';
+import { CategoriesTab } from './tabs/CategoriesTab';
 import { 
   ShieldCheck, Store, ArrowLeft, CheckCircle, XCircle, Loader2, LogOut, X, Sparkles, Plus, 
   Menu, Users, FileText, MessageSquare, Tags, BarChart3, Trash2, Edit3, ChevronRight, User, ClipboardList,
@@ -104,26 +109,16 @@ export const AdminDashboardLayout: React.FC = () => {
   const [cityQuery, setCityQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
-  // Users Tab States
-  const [usersList, setUsersList] = useState<any[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState('ALL');
-  const [userPage, setUserPage] = useState(1);
-  const [userTotalPages, setUserTotalPages] = useState(1);
+  // Users Tab States (Moved to UsersTab component)
+
 
   // Dealer Requests Tab States
   const [dealerRequests, setDealerRequests] = useState<any[]>([]);
   const [dealerRequestsLoading, setDealerRequestsLoading] = useState(false);
 
-  // RFQs Tab States
-  const [rfqs, setRfqs] = useState<any[]>([]);
-  const [rfqsLoading, setRfqsLoading] = useState(false);
-  const [rfqStatusFilter, setRfqStatusFilter] = useState('ALL');
+  // RFQs Tab States (Moved to RfqsTab component)
 
-  // Reviews Tab States
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
+  // Reviews Tab States (Moved to ReviewsTab component)
 
   // Stats / Analytics States
   const [stats, setStats] = useState<any>(null);
@@ -135,12 +130,7 @@ export const AdminDashboardLayout: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [submittingAuth, setSubmittingAuth] = useState(false);
 
-  // Category Modal States
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatIcon, setNewCatIcon] = useState(''); // e.g. "Zap", "Activity", "HelpCircle"
-  const [submittingCat, setSubmittingCat] = useState(false);
-  const [catError, setCatError] = useState('');
+  // Category Modal States (Moved to CategoriesTab)
 
   // System Logs States
   const [logs, setLogs] = useState<string[]>([
@@ -177,12 +167,9 @@ export const AdminDashboardLayout: React.FC = () => {
     if (!token) return;
     setSlidersLoading(true);
     try {
-      const res = await fetch('/api/businesses/sliders/all');
-      if (res.ok) {
-        const data = await res.json();
-        setSliders(data);
-        addLog(`[Audit] Loaded sliders list. Found ${data.length} banners.`);
-      }
+      const data = await apiClient.get('/businesses/sliders/all');
+      setSliders(data);
+      addLog(`[Audit] Loaded sliders list. Found ${data.length} banners.`);
     } catch (err) {
       console.error('Failed to fetch sliders', err);
       addLog(`[Error] Failed to load sliders.`);
@@ -194,27 +181,14 @@ export const AdminDashboardLayout: React.FC = () => {
   // Save sliders back to backend
   const saveSliders = async (updatedSliders: any[]) => {
     try {
-      const res = await fetch('/api/businesses/sliders/manage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ sliders: updatedSliders })
-      });
-      if (res.ok) {
-        setSliders(updatedSliders);
-        addLog(`[Audit] Dynamic home hero sliders saved successfully.`);
-        return true;
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to save sliders');
-        addLog(`[Error] Failed to save sliders: ${errData.error}`);
-        return false;
-      }
+      await apiClient.post('/businesses/sliders/manage', { sliders: updatedSliders });
+      setSliders(updatedSliders);
+      addLog(`[Audit] Dynamic home hero sliders saved successfully.`);
+      return true;
     } catch (err: any) {
       console.error('Failed to save sliders', err);
       addLog(`[Error] Failed to save sliders: ${err.message}`);
+      alert(err.message || 'Failed to save sliders');
       return false;
     }
   };
@@ -273,16 +247,8 @@ export const AdminDashboardLayout: React.FC = () => {
     setSubmittingAuth(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: adminEmail, password: adminPassword })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
-      }
-
+      const data = await apiClient.post('/auth/login', { email: adminEmail, password: adminPassword });
+      
       if (data.user.role !== 'ADMIN') {
         throw new Error('Access Denied: You do not have administrator privileges.');
       }
@@ -290,7 +256,7 @@ export const AdminDashboardLayout: React.FC = () => {
       login(data.token, data.user);
       setActiveTab('profile');
     } catch (err: any) {
-      setAuthError(err.message);
+      setAuthError(err.message || 'Authentication failed');
     } finally {
       setSubmittingAuth(false);
     }
@@ -301,19 +267,13 @@ export const AdminDashboardLayout: React.FC = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/businesses?status=ALL');
-      if (res.ok) {
-        const data = await res.json();
-        setBusinesses(data);
-        addLog(`[Audit] Fetched listing database. Found ${data.length} listings.`);
-      }
+      const data = await apiClient.get('/businesses?status=ALL');
+      setBusinesses(data);
+      addLog(`[Audit] Fetched listing database. Found ${data.length} listings.`);
 
-      const resCats = await fetch('/api/businesses/categories');
-      if (resCats.ok) {
-        const dataCats = await resCats.json();
-        setCategories(dataCats);
-        addLog(`[Audit] Fetched categories. Found ${dataCats.length} active tags.`);
-      }
+      const dataCats = await apiClient.get('/businesses/categories');
+      setCategories(dataCats);
+      addLog(`[Audit] Fetched categories. Found ${dataCats.length} active tags.`);
     } catch (err) {
       console.error(err);
       addLog(`[Error] Failed to fetch admin data.`);
@@ -322,83 +282,20 @@ export const AdminDashboardLayout: React.FC = () => {
     }
   };
 
-  // 2. Fetch Users (Runs on Users Tab)
-  const fetchUsers = async () => {
-    if (!token) return;
-    setUsersLoading(true);
-    try {
-      const res = await fetch(`/api/admin/users?page=${userPage}&limit=10&search=${encodeURIComponent(userSearch)}&role=${userRoleFilter}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUsersList(data.users);
-        setUserTotalPages(data.pagination.totalPages);
-        addLog(`[Audit] Loaded users list (Page ${userPage}). Total count: ${data.pagination.total}.`);
-      }
-    } catch (err) {
-      console.error('Failed to fetch users', err);
-      addLog(`[Error] Failed to load users.`);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
+  // 2. Fetch Users (Moved to UsersTab component)
 
-  // 3. Fetch RFQs (Runs on RFQs Tab)
-  const fetchRfqs = async () => {
-    if (!token) return;
-    setRfqsLoading(true);
-    try {
-      const res = await fetch(`/api/admin/rfqs?status=${rfqStatusFilter}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRfqs(data);
-        addLog(`[Audit] Loaded RFQ list. Found ${data.length} posts.`);
-      }
-    } catch (err) {
-      console.error('Failed to fetch rfqs', err);
-      addLog(`[Error] Failed to load RFQs.`);
-    } finally {
-      setRfqsLoading(false);
-    }
-  };
+  // 3. Fetch RFQs (Moved to RfqsTab component)
 
-  // 4. Fetch Reviews (Runs on Reviews Tab)
-  const fetchReviews = async () => {
-    if (!token) return;
-    setReviewsLoading(true);
-    try {
-      const res = await fetch('/api/admin/reviews', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data);
-        addLog(`[Audit] Loaded review moderation list. Found ${data.length} entries.`);
-      }
-    } catch (err) {
-      console.error('Failed to fetch reviews', err);
-      addLog(`[Error] Failed to load reviews.`);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
+  // 4. Fetch Reviews (Moved to ReviewsTab component)
 
   // 5. Fetch Platform Stats (Runs on Analytics Tab)
   const fetchStats = async () => {
     if (!token) return;
     setStatsLoading(true);
     try {
-      const res = await fetch('/api/admin/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-        addLog(`[Audit] Pulled system growth analytics and role distributions.`);
-      }
+      const data = await apiClient.get('/admin/stats');
+      setStats(data);
+      addLog(`[Audit] Pulled system growth analytics and role distributions.`);
     } catch (err) {
       console.error('Failed to fetch stats', err);
       addLog(`[Error] Failed to load statistics.`);
@@ -412,14 +309,9 @@ export const AdminDashboardLayout: React.FC = () => {
     if (!token) return;
     setDealerRequestsLoading(true);
     try {
-      const res = await fetch('/api/admin/dealer-requests', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDealerRequests(data);
-        addLog(`[Audit] Loaded dealer requests list. Found ${data.length} entries.`);
-      }
+      const data = await apiClient.get('/admin/dealer-requests');
+      setDealerRequests(data);
+      addLog(`[Audit] Loaded dealer requests list. Found ${data.length} entries.`);
     } catch (err) {
       console.error('Failed to fetch dealer requests', err);
       addLog(`[Error] Failed to load dealer requests.`);
@@ -433,12 +325,6 @@ export const AdminDashboardLayout: React.FC = () => {
     if (user && user.role === 'ADMIN') {
       if (activeTab === 'listings') {
         loadAdminData();
-      } else if (activeTab === 'users') {
-        fetchUsers();
-      } else if (activeTab === 'rfqs') {
-        fetchRfqs();
-      } else if (activeTab === 'reviews') {
-        fetchReviews();
       } else if (activeTab === 'categories') {
         loadAdminData();
       } else if (activeTab === 'analytics') {
@@ -449,67 +335,46 @@ export const AdminDashboardLayout: React.FC = () => {
         fetchSliders();
       }
     }
-  }, [activeTab, token, user, userPage, userRoleFilter]);
+  }, [activeTab, token, user]);
 
   // Actions: Approve dealer request
   const approveDealerRequest = async (id: string, bizName: string) => {
     try {
-      const res = await fetch(`/api/admin/dealer-requests/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setDealerRequests(prev => prev.map(r => r.id === id ? {
-          ...r,
-          status: 'APPROVED',
-          generatedEmail: data.request.generatedEmail,
-          generatedPass: data.request.generatedPass
-        } : r));
-        addLog(`[Audit] Approved dealer request for "${bizName}". Credentials generated.`);
-      } else {
-        alert(data.error || 'Failed to approve request');
-        addLog(`[Error] Failed to approve dealer request for "${bizName}": ${data.error}`);
-      }
-    } catch (err) {
+      const data = await apiClient.post(`/admin/dealer-requests/${id}/approve`, {});
+      setDealerRequests(prev => prev.map(r => r.id === id ? {
+        ...r,
+        status: 'APPROVED',
+        generatedEmail: data.request.generatedEmail,
+        generatedPass: data.request.generatedPass
+      } : r));
+      addLog(`[Audit] Approved dealer request for "${bizName}". Credentials generated.`);
+    } catch (err: any) {
       console.error(err);
-      addLog(`[Error] Failed to approve dealer request for "${bizName}".`);
+      alert(err.message || 'Failed to approve request');
+      addLog(`[Error] Failed to approve dealer request for "${bizName}": ${err.message}`);
     }
   };
 
   // Actions: Reject dealer request
   const rejectDealerRequest = async (id: string, bizName: string) => {
     try {
-      const res = await fetch(`/api/admin/dealer-requests/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setDealerRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED' } : r));
-        addLog(`[Audit] Rejected dealer request for "${bizName}".`);
-      } else {
-        alert(data.error || 'Failed to reject request');
-        addLog(`[Error] Failed to reject dealer request for "${bizName}": ${data.error}`);
-      }
-    } catch (err) {
+      const data = await apiClient.post(`/admin/dealer-requests/${id}/reject`, {});
+      setDealerRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED' } : r));
+      addLog(`[Audit] Rejected dealer request for "${bizName}".`);
+    } catch (err: any) {
       console.error(err);
-      addLog(`[Error] Failed to reject dealer request for "${bizName}".`);
+      alert(err.message || 'Failed to reject request');
+      addLog(`[Error] Failed to reject dealer request for "${bizName}": ${err.message}`);
     }
   };
 
   // Actions: Verify listing
   const verifyListing = async (id: string, name: string) => {
     try {
-      const res = await fetch(`/api/businesses/${id}/verify`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: 'VERIFIED' } : b));
-        addLog(`[Audit] Listing "${name}" status updated to VERIFIED.`);
-      }
-    } catch (err) {
+      await apiClient.post(`/businesses/${id}/verify`, {});
+      setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: 'VERIFIED' } : b));
+      addLog(`[Audit] Listing "${name}" status updated to VERIFIED.`);
+    } catch (err: any) {
       console.error(err);
       addLog(`[Error] Failed to verify listing "${name}".`);
     }
@@ -518,19 +383,10 @@ export const AdminDashboardLayout: React.FC = () => {
   // Actions: Reject listing
   const rejectListing = async (id: string, name: string) => {
     try {
-      const res = await fetch(`/api/businesses/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'REJECTED' })
-      });
-      if (res.ok) {
-        setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: 'REJECTED' } : b));
-        addLog(`[Audit] Listing "${name}" status updated to REJECTED.`);
-      }
-    } catch (err) {
+      await apiClient.put(`/businesses/${id}`, { status: 'REJECTED' });
+      setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: 'REJECTED' } : b));
+      addLog(`[Audit] Listing "${name}" status updated to REJECTED.`);
+    } catch (err: any) {
       console.error(err);
       addLog(`[Error] Failed to reject listing "${name}".`);
     }
@@ -540,190 +396,26 @@ export const AdminDashboardLayout: React.FC = () => {
   const deleteBusiness = async (id: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete business "${name}"? This action is permanent.`)) return;
     try {
-      const res = await fetch(`/api/businesses/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setBusinesses(prev => prev.filter(b => b.id !== id));
-        addLog(`[Audit] Deleted business listing "${name}".`);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to delete listing');
-      }
-    } catch (err) {
+      await apiClient.delete(`/businesses/${id}`);
+      setBusinesses(prev => prev.filter(b => b.id !== id));
+      addLog(`[Audit] Deleted business listing "${name}".`);
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Failed to delete listing');
       addLog(`[Error] Failed to delete business listing "${name}".`);
     }
   };
 
-  // Actions: Change user role
-  const changeUserRole = async (userId: string, email: string, newRole: string) => {
-    try {
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-      if (res.ok) {
-        setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-        addLog(`[Audit] Changed user role for ${email} to ${newRole}.`);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to change user role');
-      }
-    } catch (err) {
-      console.error(err);
-      addLog(`[Error] Failed to change user role for ${email}.`);
-    }
-  };
+  // Actions: Change user role (Moved to UsersTab component)
+  // Actions: Delete user (Moved to UsersTab component)
 
-  // Actions: Delete user
-  const deleteUser = async (userId: string, email: string) => {
-    if (!window.confirm(`Are you sure you want to delete user ${email}? All their business listings, reviews, and activities will be removed.`)) return;
-    try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setUsersList(prev => prev.filter(u => u.id !== userId));
-        addLog(`[Audit] Deleted user account ${email}.`);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to delete user');
-      }
-    } catch (err) {
-      console.error(err);
-      addLog(`[Error] Failed to delete user ${email}.`);
-    }
-  };
+  // Actions: Delete RFQ (Moved to RfqsTab component)
 
-  // Actions: Delete RFQ
-  const deleteRfq = async (rfqId: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete RFQ "${title}"?`)) return;
-    try {
-      const res = await fetch(`/api/rfqs/${rfqId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setRfqs(prev => prev.filter(r => r.id !== rfqId));
-        addLog(`[Audit] Deleted RFQ "${title}".`);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to delete RFQ');
-      }
-    } catch (err) {
-      console.error(err);
-      addLog(`[Error] Failed to delete RFQ "${title}".`);
-    }
-  };
+  // Actions: Delete Review (Moved to ReviewsTab component)
 
-  // Actions: Delete Review
-  const deleteReview = async (reviewId: string) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
-    try {
-      const res = await fetch(`/api/admin/reviews/${reviewId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setReviews(prev => prev.filter(r => r.id !== reviewId));
-        addLog(`[Audit] Deleted review ID ${reviewId}.`);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to delete review');
-      }
-    } catch (err) {
-      console.error(err);
-      addLog(`[Error] Failed to delete review ID ${reviewId}.`);
-    }
-  };
-
-  // Actions: Edit Category
-  const editCategory = async (catId: string, oldName: string) => {
-    const newName = window.prompt('Enter new name for the category:', oldName);
-    if (!newName || newName.trim() === '') return;
-    const newIcon = window.prompt('Enter Lucide icon name (e.g., Zap, Wrench, Activity, Heart):');
-    
-    try {
-      const res = await fetch(`/api/businesses/categories/${catId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name: newName, icon: newIcon || undefined })
-      });
-      if (res.ok) {
-        addLog(`[Audit] Updated category "${oldName}" to "${newName}".`);
-        loadAdminData();
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to update category');
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Actions: Delete Category
-  const deleteCategory = async (catId: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete category "${name}"?`)) return;
-    try {
-      const res = await fetch(`/api/businesses/categories/${catId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        addLog(`[Audit] Deleted category "${name}".`);
-        loadAdminData();
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to delete category');
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Action: Create Category
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCatError('');
-    setSubmittingCat(true);
-
-    try {
-      const res = await fetch('/api/businesses/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name: newCatName, icon: newCatIcon || 'HelpCircle' })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to create category');
-      }
-
-      addLog(`[Audit] Category "${newCatName}" created successfully.`);
-      setIsCategoryModalOpen(false);
-      setNewCatName('');
-      setNewCatIcon('');
-      loadAdminData();
-    } catch (err: any) {
-      setCatError(err.message);
-      addLog(`[Error] Failed to create category: ${err.message}`);
-    } finally {
-      setSubmittingCat(false);
-    }
-  };
+  // Actions: Edit Category (Moved to CategoriesTab)
+  // Actions: Delete Category (Moved to CategoriesTab)
+  // Action: Create Category (Moved to CategoriesTab)
 
   if (authLoading) {
     return (
@@ -1133,10 +825,7 @@ export const AdminDashboardLayout: React.FC = () => {
                         <span>Quick Actions</span>
                       </h3>
                       <button
-                        onClick={() => {
-                          setCatError('');
-                          setIsCategoryModalOpen(true);
-                        }}
+                        onClick={() => setActiveTab('categories')}
                         className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all"
                       >
                         <Plus className="w-4 h-4 mr-1" />
@@ -1165,395 +854,22 @@ export const AdminDashboardLayout: React.FC = () => {
 
           {/* TAB 2: USER MANAGEMENT */}
           {activeTab === 'users' && (
-            <div className="space-y-6 text-left">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900">User Accounts Directory</h1>
-                <p className="text-xs text-slate-500 mt-1">Manage user registrations, modify privileges, or ban user accounts permanently.</p>
-              </div>
-
-              {/* Search & Filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50/50 border border-slate-200 rounded-none">
-                <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Search Users (Name/Email/Phone)</label>
-                  <input
-                    type="text"
-                    value={userSearch}
-                    onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }}
-                    placeholder="Search name, email, phone..."
-                    className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Filter User Role</label>
-                  <div className="relative">
-                    <select
-                      value={userRoleFilter}
-                      onChange={(e) => { setUserRoleFilter(e.target.value); setUserPage(1); }}
-                      className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold appearance-none bg-white pr-8"
-                    >
-                      <option value="ALL">All Roles</option>
-                      <option value="CUSTOMER">CUSTOMER (Clients)</option>
-                      <option value="OWNER">OWNER (Dealers)</option>
-                      <option value="ADMIN">ADMIN (Administrators)</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                      ▼
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {usersLoading ? (
-                <div className="flex justify-center items-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-                </div>
-              ) : (
-                <div className="rounded-none glass-panel border border-slate-200 overflow-hidden bg-white shadow-glass-sm animate-in fade-in-50 duration-200">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-slate-50/65 border-b border-slate-150 text-slate-655 uppercase tracking-wider font-bold">
-                          <th className="p-3.5">User Name</th>
-                          <th className="p-3.5">Email</th>
-                          <th className="p-3.5">Phone</th>
-                          <th className="p-3.5">Active Role</th>
-                          <th className="p-3.5">Plan / Stats</th>
-                          <th className="p-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {usersList.length > 0 ? (
-                          usersList.map((usr) => (
-                            <tr key={usr.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="p-3.5 font-bold text-slate-900">{usr.name}</td>
-                              <td className="p-3.5 font-medium">{usr.email}</td>
-                              <td className="p-3.5 text-slate-500">{usr.phone || 'N/A'}</td>
-                              <td className="p-3.5">
-                                <div className="flex items-center space-x-1.5">
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-none text-[8px] font-black uppercase tracking-wider border ${
-                                    usr.role === 'ADMIN'
-                                      ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-sm'
-                                      : usr.role === 'OWNER'
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
-                                      : 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm'
-                                  }`}>
-                                    {usr.role === 'OWNER' ? 'SELLER/OWNER' : usr.role}
-                                  </span>
-                                  <select
-                                    value={usr.role}
-                                    disabled={usr.id === user?.id} // Don't allow changing self
-                                    onChange={(e) => changeUserRole(usr.id, usr.email, e.target.value)}
-                                    className="rounded-none border border-slate-250 px-1 py-0.5 text-[10px] font-extrabold bg-slate-50 uppercase cursor-pointer focus:outline-none"
-                                  >
-                                    <option value="CUSTOMER">Customer</option>
-                                    <option value="OWNER">Owner</option>
-                                    <option value="ADMIN">Admin</option>
-                                  </select>
-                                </div>
-                              </td>
-                              <td className="p-3.5 whitespace-nowrap">
-                                <span className="inline-flex rounded-none bg-slate-100 border border-slate-200 px-2 py-0.5 text-[9px] font-bold text-slate-600 uppercase tracking-wide mr-1.5">
-                                  {usr.subscription?.plan || 'FREE'}
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  ({usr._count?.businesses || 0} Biz | {usr._count?.rfqs || 0} RFQ)
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-right whitespace-nowrap">
-                                <button
-                                  onClick={() => deleteUser(usr.id, usr.email)}
-                                  disabled={usr.id === user?.id}
-                                  className="inline-flex items-center justify-center p-1.5 rounded-none bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 disabled:opacity-30 shadow-2xs"
-                                  title="Delete User Permanently"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="p-8 text-center text-slate-400 italic">
-                              No registered users found matching the query.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Users Pagination */}
-                  {userTotalPages > 1 && (
-                    <div className="flex justify-between items-center p-4 bg-slate-50/50 border-t border-slate-100">
-                      <button
-                        onClick={() => setUserPage(prev => Math.max(prev - 1, 1))}
-                        disabled={userPage === 1}
-                        className="px-3 py-1 rounded-none border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600 disabled:opacity-40"
-                      >
-                        Prev Page
-                      </button>
-                      <span className="text-2xs font-extrabold text-slate-500 uppercase tracking-wide">
-                        Page {userPage} of {userTotalPages}
-                      </span>
-                      <button
-                        onClick={() => setUserPage(prev => Math.min(prev + 1, userTotalPages))}
-                        disabled={userPage === userTotalPages}
-                        className="px-3 py-1 rounded-none border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600 disabled:opacity-40"
-                      >
-                        Next Page
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <UsersTab addLog={addLog} />
           )}
 
           {/* TAB 3: RFQ MODERATION */}
           {activeTab === 'rfqs' && (
-            <div className="space-y-6 text-left">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900">RFQ Moderation Panel</h1>
-                <p className="text-xs text-slate-500 mt-1">Monitor all active procurement bids, client requests, and remove inappropriate entries.</p>
-              </div>
-
-              {/* Filters */}
-              <div className="flex p-4 bg-slate-50/50 border border-slate-200 rounded-2xl justify-between items-center">
-                <div className="w-64">
-                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Filter RFQ Status</label>
-                  <div className="relative">
-                    <select
-                      value={rfqStatusFilter}
-                      onChange={(e) => { setRfqStatusFilter(e.target.value); }}
-                      className="w-full rounded-xl px-3 py-2 text-xs glass-input font-bold appearance-none bg-white pr-8"
-                    >
-                      <option value="ALL">All Statuses</option>
-                      <option value="OPEN">OPEN (Receiving Bids)</option>
-                      <option value="ACCEPTED">ACCEPTED (Deal Closed)</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                      ▼
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xs font-extrabold text-slate-400 uppercase tracking-wider">
-                  Total System RFQs: {rfqs.length}
-                </div>
-              </div>
-
-              {rfqsLoading ? (
-                <div className="flex justify-center items-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-                </div>
-              ) : (
-                <div className="rounded-none glass-panel border border-slate-200 overflow-hidden bg-white shadow-glass-sm animate-in fade-in-50 duration-200">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-slate-50/65 border-b border-slate-150 text-slate-655 uppercase tracking-wider font-bold">
-                          <th className="p-3.5">Requirement Details</th>
-                          <th className="p-3.5">Category</th>
-                          <th className="p-3.5">Client Info</th>
-                          <th className="p-3.5">Bids / Proposals</th>
-                          <th className="p-3.5">Status</th>
-                          <th className="p-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {rfqs.length > 0 ? (
-                          rfqs.map((rfq) => (
-                            <tr key={rfq.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="p-3.5 max-w-xs">
-                                <div className="font-bold text-slate-900 leading-snug">{rfq.title}</div>
-                                <div className="text-2xs text-slate-455 truncate mt-0.5">{rfq.description}</div>
-                              </td>
-                              <td className="p-3.5 whitespace-nowrap">
-                                <span className="px-2.5 py-0.5 rounded-none bg-slate-100 border border-slate-200 text-[10px] text-slate-550 font-bold uppercase tracking-wide">
-                                  {rfq.category?.name || 'General'}
-                                </span>
-                              </td>
-                              <td className="p-3.5">
-                                <div className="font-semibold">{rfq.customer?.name}</div>
-                                <div className="text-[10px] text-slate-400">{rfq.customer?.email}</div>
-                              </td>
-                              <td className="p-3.5">
-                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-none bg-indigo-50 border border-indigo-200 text-[10px] font-extrabold text-indigo-600">
-                                  {rfq.proposals?.length || 0}
-                                </span>
-                              </td>
-                              <td className="p-3.5">
-                                <span className={`inline-flex px-2 py-0.5 rounded-none text-[10px] font-extrabold ${
-                                  rfq.status === 'OPEN' 
-                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                                    : 'bg-indigo-50 text-indigo-600 border border-indigo-200'
-                                }`}>
-                                  {rfq.status}
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-right">
-                                <button
-                                  onClick={() => deleteRfq(rfq.id, rfq.title)}
-                                  className="inline-flex items-center justify-center p-1.5 rounded-none bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 shadow-2xs"
-                                  title="Delete RFQ Listing"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="p-8 text-center text-slate-400 italic">
-                              No RFQ posts found in the system.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
+            <RfqsTab addLog={addLog} />
           )}
 
           {/* TAB 4: REVIEWS MODERATION */}
           {activeTab === 'reviews' && (
-            <div className="space-y-6 text-left">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900">Review Moderation Panel</h1>
-                <p className="text-xs text-slate-500 mt-1">Review ratings submitted by users and remove fraudulent, abusive, or low-quality comments.</p>
-              </div>
-
-              {reviewsLoading ? (
-                <div className="flex justify-center items-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-                </div>
-              ) : (
-                <div className="rounded-none glass-panel border border-slate-200 overflow-hidden bg-white shadow-glass-sm animate-in fade-in-50 duration-200">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-slate-50/65 border-b border-slate-150 text-slate-655 uppercase tracking-wider font-bold">
-                          <th className="p-3.5">Business Name</th>
-                          <th className="p-3.5">Review Submitter</th>
-                          <th className="p-3.5 text-center">Rating</th>
-                          <th className="p-3.5">Comment Feed</th>
-                          <th className="p-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {reviews.length > 0 ? (
-                          reviews.map((rev) => (
-                            <tr key={rev.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="p-3.5 font-bold text-slate-900">
-                                <Link to={`/business/${rev.business?.slug}`} className="hover:underline hover:text-rose-600">
-                                  {rev.business?.name}
-                                </Link>
-                              </td>
-                              <td className="p-3.5">
-                                <div className="font-semibold">{rev.user?.name}</div>
-                                <div className="text-[10px] text-slate-400">{rev.user?.email}</div>
-                              </td>
-                              <td className="p-3.5 text-center whitespace-nowrap">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-none bg-amber-50 border border-amber-200 text-xs font-black text-amber-600">
-                                  ★ {rev.rating}.0
-                                </span>
-                              </td>
-                              <td className="p-3.5 max-w-sm font-medium text-slate-600 leading-relaxed italic">
-                                "{rev.comment}"
-                              </td>
-                              <td className="p-3.5 text-right">
-                                <button
-                                  onClick={() => deleteReview(rev.id)}
-                                  className="inline-flex items-center justify-center p-1.5 rounded-none bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 shadow-2xs"
-                                  title="Delete Review"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="p-8 text-center text-slate-400 italic">
-                              No customer reviews found.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ReviewsTab addLog={addLog} />
           )}
 
           {/* TAB 5: CATEGORIES TAXONOMY */}
           {activeTab === 'categories' && (
-            <div className="space-y-6 text-left">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h1 className="text-2xl font-extrabold text-slate-900">Directory Taxonomy</h1>
-                  <p className="text-xs text-slate-500 mt-1">Manage active business categories, change display icons, or delete unused tags.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setCatError('');
-                    setIsCategoryModalOpen(true);
-                  }}
-                  className="inline-flex items-center space-x-1 px-4 py-2 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  <span>Create Category</span>
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="flex justify-center items-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-50 duration-200">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="p-5 rounded-none glass-panel border border-slate-200 bg-white shadow-glass-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div className="w-10 h-10 rounded-none bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
-                          <Tags className="w-5 h-5" />
-                        </div>
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => editCategory(cat.id, cat.name)}
-                            className="p-1 rounded-none hover:bg-slate-100 text-slate-500 hover:text-slate-700"
-                            title="Edit Category Name/Icon"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => deleteCategory(cat.id, cat.name)}
-                            className="p-1 rounded-none hover:bg-red-50 text-slate-500 hover:text-red-655"
-                            title="Delete Category"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h3 className="font-extrabold text-slate-900 text-sm">{cat.name}</h3>
-                        <p className="text-[10px] text-slate-400 font-mono">slug: {cat.slug}</p>
-                      </div>
-
-                      <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-2xs font-extrabold uppercase tracking-wide text-slate-455">
-                        <span>Listings Connected</span>
-                        <span className="bg-slate-100 px-2 py-0.5 rounded-none text-slate-600">
-                          {cat._count?.businesses || 0} active
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CategoriesTab addLog={addLog} />
           )}
 
           {/* TAB 6: PLATFORM ANALYTICS */}
@@ -1934,76 +1250,6 @@ export const AdminDashboardLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Create Category Modal Overlay */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)}></div>
-
-          <div className="relative w-full max-w-md bg-white border border-slate-200/80 rounded-none p-6 shadow-2xl z-10 overflow-hidden text-slate-900 text-left animate-in fade-in zoom-in-95 duration-200">
-            <div className="absolute top-0 right-0 p-4">
-              <button onClick={() => setIsCategoryModalOpen(false)} className="text-slate-400 hover:text-slate-655 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 mb-1 tracking-tight">Create Directory Category</h2>
-            <p className="text-xs text-slate-500 mb-6">
-              Create a new category. Users can submit RFQs and dealers can list businesses under this tag.
-            </p>
-
-            {catError && (
-              <div className="mb-4 p-3 rounded-none bg-red-50 border border-red-200 text-red-650 text-xs font-semibold">
-                {catError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateCategory} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Category Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="e.g. Electricians, Car Services"
-                  className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1">Lucide Icon Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newCatIcon}
-                  onChange={(e) => setNewCatIcon(e.target.value)}
-                  placeholder="e.g. Zap, Wrench, Activity, Heart"
-                  className="w-full rounded-none px-3 py-2 text-xs glass-input font-bold"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-none text-slate-655 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingCat}
-                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all disabled:opacity-55"
-                >
-                  {submittingCat ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  <span>Create Category</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Add / Edit Slider Modal Overlay */}
       {isSliderModalOpen && (
         <div className="fixed inset-0 z-55 flex items-center justify-center p-4">
@@ -2133,3 +1379,4 @@ export const AdminDashboardLayout: React.FC = () => {
   );
 };
 export default AdminDashboardLayout;
+

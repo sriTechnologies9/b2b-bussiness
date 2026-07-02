@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
+import { apiClient } from '../api/client';
 interface LeadModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -52,24 +52,10 @@ export const LeadModal: React.FC<LeadModalProps> = ({
     setSubmitting(true);
 
     try {
-      const headers: any = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          businessId,
-          ...formData
-        })
+      await apiClient.post('/leads', {
+        businessId,
+        ...formData
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit requirement');
-      }
 
       setIsSuccess(true);
       setFormData({ customerName: '', phone: '', message: '' });

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search as SearchIcon, MapPin, Layers, Loader2 } from 'lucide-react';
 import { BusinessCard } from '../components/BusinessCard';
 import { MapWidget } from '../components/MapWidget';
+import { apiClient } from '../api/client';
 
 export const Search: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,6 +14,9 @@ export const Search: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Update document title and meta description dynamically for SEO
   useEffect(() => {
@@ -39,11 +43,8 @@ export const Search: React.FC = () => {
   useEffect(() => {
     const fetchCats = async () => {
       try {
-        const res = await fetch('/api/businesses/categories');
-        if (res.ok) {
-          const data = await res.json();
-          setCategories(data);
-        }
+        const data = await apiClient.get('/businesses/categories');
+        setCategories(data);
       } catch (err) {
         console.error('Failed to load categories', err);
       }
@@ -52,8 +53,10 @@ export const Search: React.FC = () => {
   }, []);
 
   // Fetch businesses based on query parameters
-  const fetchListings = async () => {
-    setLoading(true);
+  const fetchListings = async (pageNum = 1) => {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
     try {
       const q = searchParams.get('query') || '';
       const c = searchParams.get('city') || '';
@@ -63,22 +66,34 @@ export const Search: React.FC = () => {
       if (q) params.append('query', q);
       if (c) params.append('city', c);
       if (cat) params.append('category', cat);
+      params.append('page', pageNum.toString());
+      params.append('limit', '20');
 
-      const res = await fetch(`/api/businesses?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get(`/businesses?${params.toString()}`);
+      if (pageNum === 1) {
         setBusinesses(data);
+      } else {
+        setBusinesses(prev => [...prev, ...data]);
       }
+      setHasMore(data.length === 20);
     } catch (err) {
       console.error('Failed to fetch businesses', err);
     } finally {
-      setLoading(false);
+      if (pageNum === 1) setLoading(false);
+      else setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchListings();
+    setPage(1);
+    fetchListings(1);
   }, [searchParams]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchListings(nextPage);
+  };
 
   const handleFilterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,11 +177,25 @@ export const Search: React.FC = () => {
               <span className="text-sm text-slate-500">Searching business directory...</span>
             </div>
           ) : businesses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {businesses.map((item) => (
-                <BusinessCard key={item.id} business={item} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {businesses.map((item) => (
+                  <BusinessCard key={item.id} business={item} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center pt-6">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="inline-flex items-center px-6 py-2.5 rounded-xl text-sm font-bold text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  >
+                    {loadingMore && <Loader2 className="w-4 h-4 mr-2 animate-spin text-slate-400" />}
+                    Load More Businesses
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-24 rounded-2xl border border-dashed border-slate-300">
               <p className="text-slate-500 mb-2">No businesses found matching your parameters.</p>

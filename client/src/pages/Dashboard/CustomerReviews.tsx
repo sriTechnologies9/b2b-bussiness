@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Star, Loader2, MessageSquare, Calendar, User } from 'lucide-react';
+import { apiClient } from '../../api/client';
 
 export const CustomerReviews: React.FC = () => {
   const { token } = useAuth();
@@ -13,22 +14,14 @@ export const CustomerReviews: React.FC = () => {
       if (!token) return;
       try {
         // 1. Get my business listing
-        const resBiz = await fetch('/api/businesses/my-listings', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (resBiz.ok) {
-          const bizList = await resBiz.json();
-          if (bizList.length > 0) {
-            const myBiz = bizList[0];
-            
-            // 2. Fetch full business listing details by slug (includes reviews with author user names)
-            const resDetails = await fetch(`/api/businesses/slug/${myBiz.slug}`);
-            if (resDetails.ok) {
-              const details = await resDetails.json();
-              setBusiness(details);
-              setReviews(details.reviews || []);
-            }
-          }
+        const bizList = await apiClient.get('/businesses/my-listings');
+        if (bizList.length > 0) {
+          const myBiz = bizList[0];
+          
+          // 2. Fetch full business listing details by slug (includes reviews with author user names)
+          const details = await apiClient.get(`/businesses/slug/${myBiz.slug}`);
+          setBusiness(details);
+          setReviews(details.reviews || []);
         }
       } catch (err) {
         console.error('Failed to load reviews data', err);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { Star, Loader2, MessageSquare, Trash2, Calendar } from 'lucide-react';
 
 export const UserReviews: React.FC = () => {
@@ -11,11 +12,8 @@ export const UserReviews: React.FC = () => {
   const fetchReviews = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/reviews/my-reviews', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get('/reviews/my-reviews');
+      if (data) {
         setReviews(data);
       }
     } catch (err) {
@@ -34,16 +32,8 @@ export const UserReviews: React.FC = () => {
     setDeletingId(id);
 
     try {
-      const res = await fetch(`/api/reviews/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setReviews(prev => prev.filter(r => r.id !== id));
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete review');
-      }
+      await apiClient.delete(`/reviews/${id}`);
+      setReviews(prev => prev.filter(r => r.id !== id));
     } catch (err) {
       console.error(err);
       alert('An error occurred while deleting review');

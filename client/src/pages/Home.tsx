@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { BusinessCard } from '../components/BusinessCard';
 import { LeadModal } from '../components/LeadModal';
+import { apiClient } from '../api/client';
 
 const CATEGORIES = [
   { name: 'Restaurants', slug: 'restaurants', icon: Utensils, color: 'text-rose-450 bg-rose-500/10 border-rose-500/20' },
@@ -292,12 +293,9 @@ export const Home: React.FC = () => {
   useEffect(() => {
     const fetchSliders = async () => {
       try {
-        const res = await fetch('/api/businesses/sliders/all');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) {
-            setHeroSlides(data);
-          }
+        const data = await apiClient.get('/businesses/sliders/all');
+        if (data && data.length > 0) {
+          setHeroSlides(data);
         }
       } catch (err) {
         console.error('Failed to fetch custom sliders', err);
@@ -352,24 +350,21 @@ export const Home: React.FC = () => {
   const loadInitialData = async () => {
     try {
       // Fetch businesses
-      const resBiz = await fetch('/api/businesses');
-      if (resBiz.ok) {
-        const dataBiz = await resBiz.json();
+      const dataBiz = await apiClient.get('/businesses');
+      if (dataBiz) {
         setAllBusinesses(dataBiz);
         setFeatured(dataBiz.slice(0, 3));
       }
 
       // Fetch all products
-      const resProd = await fetch('/api/businesses/all/products');
-      if (resProd.ok) {
-        const dataProd = await resProd.json();
+      const dataProd = await apiClient.get('/businesses/all/products');
+      if (dataProd) {
         setProducts(dataProd);
       }
 
       // Fetch all categories
-      const resCats = await fetch('/api/businesses/categories');
-      if (resCats.ok) {
-        const dataCats = await resCats.json();
+      const dataCats = await apiClient.get('/businesses/categories');
+      if (dataCats) {
         setDbCategories(dataCats);
       }
     } catch (err) {

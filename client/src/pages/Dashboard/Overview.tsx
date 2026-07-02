@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { ClipboardList, TrendingUp, Sparkles, AlertCircle, Plus, ChevronRight, MessageSquare, Phone, Users } from 'lucide-react';
 
 export const Overview: React.FC = () => {
@@ -16,23 +17,15 @@ export const Overview: React.FC = () => {
       if (!token) return;
       try {
         // Fetch owner's listings
-        const resListings = await fetch('/api/businesses/my-listings', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (resListings.ok) {
-          const listings = await resListings.json();
-          if (listings.length > 0) {
-            const myBiz = listings[0];
-            setBusiness(myBiz);
+        const listings = await apiClient.get('/businesses/my-listings');
+        if (listings && listings.length > 0) {
+          const myBiz = listings[0];
+          setBusiness(myBiz);
 
-            // Fetch leads for this listing
-            const resLeads = await fetch(`/api/leads/business/${myBiz.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (resLeads.ok) {
-              const leadData = await resLeads.json();
-              setLeads(leadData);
-            }
+          // Fetch leads for this listing
+          const leadData = await apiClient.get(`/leads/business/${myBiz.id}`);
+          if (leadData) {
+            setLeads(leadData);
           }
         }
       } catch (err) {

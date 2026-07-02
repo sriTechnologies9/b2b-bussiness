@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { Store, Send, CheckCircle, Clock, AlertTriangle, Copy, Check, Loader2, Lock } from 'lucide-react';
 
 interface Category {
@@ -45,13 +46,8 @@ export const BecomeDealer: React.FC = () => {
   const fetchRequestStatus = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/auth/dealer-request', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await apiClient.get('/auth/dealer-request');
+      if (data && data.success) {
         setRequest(data.request);
       }
     } catch (err) {
@@ -64,9 +60,8 @@ export const BecomeDealer: React.FC = () => {
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
-      const res = await fetch('/api/businesses/categories');
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiClient.get('/businesses/categories');
+      if (data) {
         setCategories(data);
         if (data.length > 0) {
           setSelectedCat(data[0].name);
@@ -97,23 +92,12 @@ export const BecomeDealer: React.FC = () => {
     }
 
     try {
-      const res = await fetch('/api/auth/become-dealer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          businessName: bizName,
-          categoryName: selectedCat,
-          contactEmail,
-          contactPhone
-        })
+      const data = await apiClient.post('/auth/become-dealer', {
+        businessName: bizName,
+        categoryName: selectedCat,
+        contactEmail,
+        contactPhone
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit dealer request');
-      }
 
       setSuccessMsg('Your dealer onboarding request has been submitted successfully.');
       setRequest(data.request);

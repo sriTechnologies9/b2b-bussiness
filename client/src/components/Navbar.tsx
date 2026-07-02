@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../api/client';
 import { LogOut, LayoutDashboard, X, Loader2, Sparkles, User, Menu } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -53,18 +54,10 @@ export const Navbar: React.FC = () => {
       }
     }
 
-    const url = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const url = isRegister ? '/auth/register' : '/auth/login';
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
-      }
+      const data = await apiClient.post(url, formData);
 
       login(data.token, data.user);
       setIsOpen(false);

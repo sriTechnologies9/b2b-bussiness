@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
 import { Check, Loader2, CreditCard, ShieldCheck } from 'lucide-react';
 
 const PLANS = [
@@ -90,32 +91,20 @@ export const Subscriptions: React.FC = () => {
     setProcessing(true);
 
     try {
-      const res = await fetch('/api/subscriptions/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ plan: selectedPlan.id })
-      });
-      const data = await res.json();
+      const data = await apiClient.post('/subscriptions/upgrade', { plan: selectedPlan.id });
       
-      if (res.ok) {
-        // Upgrade locally in context
-        if (user) {
-          updateUser({
-            ...user,
-            subscription: data.subscription
-          });
-        }
-        setCheckoutOpen(false);
-        alert(`Plan successfully upgraded to ${selectedPlan.name}!`);
-      } else {
-        alert(data.error || 'Failed to upgrade plan');
+      // Upgrade locally in context
+      if (user) {
+        updateUser({
+          ...user,
+          subscription: data.subscription
+        });
       }
-    } catch (err) {
+      setCheckoutOpen(false);
+      alert(`Plan successfully upgraded to ${selectedPlan.name}!`);
+    } catch (err: any) {
       console.error(err);
-      alert('Checkout error. Try again.');
+      alert(err.message || 'Checkout error. Try again.');
     } finally {
       setProcessing(false);
     }

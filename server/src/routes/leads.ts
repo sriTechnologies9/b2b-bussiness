@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, JWT_SECRET } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createLeadSchema, updateLeadStatusSchema, trackLeadSchema } from '../schemas/lead.schema';
 import jwt from 'jsonwebtoken';
 
 
@@ -106,14 +108,10 @@ async function enrichLeadWithUserData(lead: any) {
 }
 
 // POST /api/leads - Customer submits a lead (requires authentication)
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, validate(createLeadSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { businessId, customerName, phone, message } = req.body;
-
-    if (!businessId || !customerName || !phone || !message) {
-      return res.status(400).json({ error: 'Missing required lead details' });
-    }
 
     const business = await prisma.business.findUnique({ where: { id: businessId } });
     if (!business) {
@@ -156,6 +154,10 @@ router.get('/my-inquiries', authenticateToken, async (req: AuthenticatedRequest,
       return res.json([]);
     }
 
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const inquiries = await prisma.lead.findMany({
       where: { phone: user.phone },
       include: {
@@ -179,7 +181,9 @@ router.get('/my-inquiries', authenticateToken, async (req: AuthenticatedRequest,
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     return res.json(inquiries);
@@ -207,9 +211,15 @@ router.get('/business/:businessId', authenticateToken, async (req: Authenticated
       return res.status(403).json({ error: 'Forbidden: You do not own this listing' });
     }
 
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const leads = await prisma.lead.findMany({
       where: { businessId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     const enrichedLeads = await enrichLeadsWithUserData(leads);
@@ -220,14 +230,10 @@ router.get('/business/:businessId', authenticateToken, async (req: Authenticated
 });
 
 // PUT /api/leads/:id/status - Update lead status (CRM action)
-router.put('/:id/status', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id/status', authenticateToken, validate(updateLeadStatusSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // NEW, CONTACTED, CONVERTED, CLOSED
-
-    if (!status) {
-      return res.status(400).json({ error: 'Status is required' });
-    }
 
     const lead = await prisma.lead.findUnique({
       where: { id },
@@ -287,13 +293,9 @@ router.post('/:id/rescore', authenticateToken, async (req: AuthenticatedRequest,
 });
 
 // POST /api/leads/track - Public endpoint to track storefront actions (visits, clicks)
-router.post('/track', async (req: Request, res: Response) => {
+router.post('/track', validate(trackLeadSchema), async (req: Request, res: Response) => {
   try {
     const { businessId, action } = req.body; // action: 'visit' | 'whatsapp' | 'phone'
-
-    if (!businessId || !action) {
-      return res.status(400).json({ error: 'Missing businessId or action type' });
-    }
 
     const business = await prisma.business.findUnique({ where: { id: businessId } });
     if (!business) {
@@ -342,8 +344,6 @@ router.post('/track', async (req: Request, res: Response) => {
       message = 'Clicked to see your phone number 📞';
       score = 'WARM';
       scoreReason = 'Clicked to reveal or call your phone number.';
-    } else {
-      return res.status(400).json({ error: 'Invalid action type' });
     }
 
     const lead = await prisma.lead.create({

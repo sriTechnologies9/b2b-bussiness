@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
-import fs from 'fs';
+import { validate } from '../middleware/validate';
+import { createCategorySchema, createBusinessSchema, updateBusinessSchema, createProductSchema, updateProductSchema } from '../schemas/business.schema';
+import fs, { promises as fsPromises } from 'fs';
 import path from 'path';
 
 const router = Router();
@@ -53,12 +55,9 @@ router.get('/categories', async (req: Request, res: Response) => {
 });
 
 // POST /api/businesses/categories - Create a new category (requires ADMIN auth)
-router.post('/categories', authenticateToken, requireRole(['ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/categories', authenticateToken, requireRole(['ADMIN']), validate(createCategorySchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { name, icon } = req.body;
-    if (!name || !icon) {
-      return res.status(400).json({ error: 'Category name and icon are required' });
-    }
 
     const slug = slugify(name);
 
@@ -95,9 +94,16 @@ router.post('/categories', authenticateToken, requireRole(['ADMIN']), async (req
 router.get('/my-listings', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const listings = await prisma.business.findMany({
       where: { userId: req.user.id },
-      include: { category: true }
+      include: { category: true },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
     });
     return res.json(listings);
   } catch (error: any) {
@@ -137,6 +143,10 @@ router.get('/', async (req: Request, res: Response) => {
       ];
     }
 
+    const limitNum = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const pageNum = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (pageNum - 1) * limitNum;
+
     const businesses = await prisma.business.findMany({
       where: whereClause,
       include: {
@@ -146,7 +156,10 @@ router.get('/', async (req: Request, res: Response) => {
             rating: true
           }
         }
-      }
+      },
+      skip,
+      take: limitNum,
+      orderBy: { createdAt: 'desc' }
     });
 
     // Map business to include average rating and review count
@@ -223,15 +236,11 @@ router.get('/slug/:slug', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireRole(['OWNER', 'ADMIN']), validate(createBusinessSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
     let { name, categoryId, categoryName, description, address, city, state, latitude, longitude, phone, email, whatsapp, website, hours, gallery } = req.body;
-
-    if (!name || (!categoryId && !categoryName) || !description || !address || !city || !state || !phone || !email) {
-      return res.status(400).json({ error: 'Missing required business fields' });
-    }
 
     // Resolve categoryId if categoryName is provided instead
     if (categoryName) {
@@ -308,7 +317,7 @@ router.post('/', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req:
   }
 });
 
-router.put('/:id', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id', authenticateToken, requireRole(['OWNER', 'ADMIN']), validate(updateBusinessSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -448,7 +457,29 @@ router.post('/generate-seo', authenticateToken, async (req: AuthenticatedRequest
 // GET /api/businesses/all/products - Get all products/offers in the marketplace
 router.get('/all/products', async (req: Request, res: Response) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
+    const { query, city, filterType } = req.query;
+
+    const whereClause: any = {};
+    if (filterType === 'offers') whereClause.isOffer = true;
+    if (filterType === 'products') whereClause.isOffer = false;
+
+    if (query) {
+      whereClause.OR = [
+        { name: { contains: query as string } },
+        { description: { contains: query as string } }
+      ];
+    }
+    
+    if (city) {
+      whereClause.business = { city: { contains: city as string } };
+    }
+
     const products = await prisma.product.findMany({
+      where: whereClause,
       include: {
         business: {
           select: {
@@ -462,7 +493,9 @@ router.get('/all/products', async (req: Request, res: Response) => {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
     return res.json(products);
   } catch (error: any) {
@@ -474,9 +507,15 @@ router.get('/all/products', async (req: Request, res: Response) => {
 router.get('/:businessId/products', async (req: Request, res: Response) => {
   try {
     const { businessId } = req.params;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const skip = (page - 1) * limit;
+
     const products = await prisma.product.findMany({
       where: { businessId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
     return res.json(products);
   } catch (error: any) {
@@ -485,14 +524,10 @@ router.get('/:businessId/products', async (req: Request, res: Response) => {
 });
 
 // POST /api/businesses/products/manage - Create a new product/offer (OWNER/ADMIN only)
-router.post('/products/manage', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/products/manage', authenticateToken, requireRole(['OWNER', 'ADMIN']), validate(createProductSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { businessId, name, description, price, image, isOffer, offerDiscount } = req.body;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    if (!businessId || !name || !description || price === undefined) {
-      return res.status(400).json({ error: 'Missing required product fields' });
-    }
 
     // Verify the business belongs to the owner
     const business = await prisma.business.findFirst({
@@ -522,7 +557,7 @@ router.post('/products/manage', authenticateToken, requireRole(['OWNER', 'ADMIN'
 });
 
 // PUT /api/businesses/products/manage/:id - Edit an existing product/offer (OWNER/ADMIN only)
-router.put('/products/manage/:id', authenticateToken, requireRole(['OWNER', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/products/manage/:id', authenticateToken, requireRole(['OWNER', 'ADMIN']), validate(updateProductSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { name, description, price, image, isOffer, offerDiscount } = req.body;
@@ -671,7 +706,7 @@ router.get('/sliders/all', async (req: Request, res: Response) => {
     if (!fs.existsSync(filePath)) {
       return res.json([]);
     }
-    const data = fs.readFileSync(filePath, 'utf-8');
+    const data = await fsPromises.readFile(filePath, 'utf-8');
     return res.json(JSON.parse(data));
   } catch (error: any) {
     return res.status(500).json({ error: 'Failed to read sliders: ' + error.message });
@@ -698,10 +733,10 @@ router.post('/sliders/manage', authenticateToken, requireRole(['ADMIN']), async 
     // Ensure the data directory exists
     const dirPath = path.dirname(filePath);
     if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
+      await fsPromises.mkdir(dirPath, { recursive: true });
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(sliders, null, 2), 'utf-8');
+    await fsPromises.writeFile(filePath, JSON.stringify(sliders, null, 2), 'utf-8');
     return res.json({ success: true, message: 'Sliders updated successfully', sliders });
   } catch (error: any) {
     return res.status(500).json({ error: 'Failed to save sliders: ' + error.message });

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET, authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { registerSchema, loginSchema, updateProfileSchema, updatePasswordSchema, becomeDealerSchema } from '../schemas/auth.schema';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -17,13 +19,9 @@ function generateToken(user: { id: string; email: string; role: string; name: st
 }
 
 // POST /api/auth/register
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', validate(registerSchema), async (req: Request, res: Response) => {
   try {
     const { name, email, phone, password, role } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email and password are required' });
-    }
 
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -84,13 +82,9 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', validate(loginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -162,7 +156,7 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
 });
 
 // PUT /api/auth/profile - Update user profile (name, email, phone)
-router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/profile', authenticateToken, validate(updateProfileSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
 
@@ -218,19 +212,11 @@ router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res:
 });
 
 // PUT /api/auth/password - Change password
-router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/password', authenticateToken, validate(updatePasswordSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
 
     const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Current password and new password are required' });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
-    }
 
     // Verify current password
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -274,7 +260,7 @@ router.post('/verify-gst', authenticateToken, async (req: AuthenticatedRequest, 
 });
 
 // POST /api/auth/become-dealer - Submit a dealer request
-router.post('/become-dealer', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/become-dealer', authenticateToken, validate(becomeDealerSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
     if (req.user.role !== 'CUSTOMER') {
@@ -282,10 +268,6 @@ router.post('/become-dealer', authenticateToken, async (req: AuthenticatedReques
     }
 
     const { businessName, categoryName, contactEmail, contactPhone } = req.body;
-
-    if (!businessName || !categoryName || !contactEmail || !contactPhone) {
-      return res.status(400).json({ error: 'All fields are required.' });
-    }
 
     // Check if there's an active request (PENDING or APPROVED)
     const existingRequest = await prisma.dealerRequest.findFirst({
